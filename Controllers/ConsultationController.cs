@@ -3,17 +3,22 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace MusicLearningApp.Controllers;
 
-[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class ConsultationController : ControllerBase
 {
+    [Authorize] // 🔥 Добавлен атрибут авторизации
     [HttpPost("message")]
     public IActionResult SendMessage([FromBody] MessageModel model)
     {
-        // В учебных целях просто логируем сообщение
-        Console.WriteLine($"Сообщение от {User.Identity?.Name}: {model.Text}");
-        return Ok("Сообщение отправлено администратору");
+        if (string.IsNullOrWhiteSpace(model.Text))
+            return BadRequest(new { error = "Сообщение не может быть пустым" });
+
+        // Логируем сообщение
+        var userId = User.FindFirst("nameid")?.Value;
+        Console.WriteLine($"📩 Новое сообщение от пользователя {userId}: {model.Text}");
+
+        return Ok(new { message = "Сообщение отправлено администратору" });
     }
 }
 

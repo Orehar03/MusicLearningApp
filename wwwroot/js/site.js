@@ -1,5 +1,4 @@
-﻿// Глобальная переменная для токена
-let authToken = localStorage.getItem('authToken') || null;
+﻿let authToken = localStorage.getItem('authToken') || null;
 
 document.addEventListener('DOMContentLoaded', () => {
     updateAuthButtons();
@@ -8,10 +7,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function updateAuthButtons() {
     const logoutBtn = document.getElementById('logout-btn');
-    if (authToken) {
-        logoutBtn.style.display = 'inline-block';
-    } else {
-        logoutBtn.style.display = 'none';
+    if (logoutBtn) {
+        logoutBtn.style.display = authToken ? 'inline-block' : 'none';
     }
 }
 
@@ -24,15 +21,33 @@ function loadPageContent() {
     }
 }
 
+// 🔥 Универсальная функция для API-запросов с токеном
+async function apiRequest(url, options = {}) {
+    const headers = options.headers || {};
+    if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+    }
+    headers['Content-Type'] = 'application/json';
+
+    return fetch(url, {
+        ...options,
+        headers
+    });
+}
+
 // Загрузка уроков
 async function loadLessons() {
     try {
-        const response = await fetch('/api/lessons', {
-            headers: { 'Authorization': `Bearer ${authToken}` }
-        });
-
-        if (!response.ok) throw new Error('Ошибка загрузки уроков');
-
+        const response = await apiRequest('/api/lessons');
+        if (!response.ok) {
+            if (response.status === 401) {
+                alert('Сессия истекла. Пожалуйста, войдите снова.');
+                localStorage.removeItem('authToken');
+                window.location.href = '/auth.html';
+                return;
+            }
+            throw new Error('Ошибка загрузки');
+        }
         const lessons = await response.json();
         const container = document.getElementById('lessons-container');
         container.innerHTML = lessons.map(lesson => `
@@ -48,20 +63,24 @@ async function loadLessons() {
             </div>
         `).join('');
     } catch (error) {
-        console.error('Ошибка:', error);
-        alert('Не удалось загрузить уроки. Пожалуйста, авторизуйтесь.');
+        console.error('Ошибка загрузки уроков:', error);
+        alert('Не удалось загрузить уроки. Попробуйте обновить страницу.');
     }
 }
 
 // Загрузка домашних заданий
 async function loadHomeworks() {
     try {
-        const response = await fetch('/api/homeworks', {
-            headers: { 'Authorization': `Bearer ${authToken}` }
-        });
-
-        if (!response.ok) throw new Error('Ошибка загрузки заданий');
-
+        const response = await apiRequest('/api/homeworks');
+        if (!response.ok) {
+            if (response.status === 401) {
+                alert('Сессия истекла. Пожалуйста, войдите снова.');
+                localStorage.removeItem('authToken');
+                window.location.href = '/auth.html';
+                return;
+            }
+            throw new Error('Ошибка загрузки');
+        }
         const homeworks = await response.json();
         const container = document.getElementById('homework-container');
         container.innerHTML = homeworks.map(hw => {
@@ -99,8 +118,8 @@ async function loadHomeworks() {
             `;
         }).join('');
     } catch (error) {
-        console.error('Ошибка:', error);
-        alert('Не удалось загрузить задания. Пожалуйста, авторизуйтесь.');
+        console.error('Ошибка загрузки заданий:', error);
+        alert('Не удалось загрузить задания. Попробуйте обновить страницу.');
     }
 }
 
@@ -110,20 +129,21 @@ async function submitHomework(homeworkId) {
     const statusElement = document.getElementById(`status-${homeworkId}`);
 
     try {
-        const response = await fetch('/api/submissions', {
+        const response = await apiRequest('/api/submissions', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
-            },
             body: JSON.stringify({ homeworkId, textAnswer })
         });
 
         const result = await response.json();
-        statusElement.textContent = response.ok ? 'Отправлено!' : result;
-        statusElement.style.color = response.ok ? 'green' : 'red';
+        if (response.ok) {
+            statusElement.textContent = 'Отправлено!';
+            statusElement.style.color = 'green';
+        } else {
+            statusElement.textContent = result.error || 'Ошибка отправки';
+            statusElement.style.color = 'red';
+        }
     } catch (error) {
-        statusElement.textContent = 'Ошибка отправки';
+        statusElement.textContent = 'Ошибка подключения';
         statusElement.style.color = 'red';
     }
 }
@@ -140,20 +160,19 @@ document.getElementById('send-message-btn')?.addEventListener('click', async () 
     }
 
     try {
-        const response = await fetch('/api/consultation/message', {
+        const response = await apiRequest('/api/consultation/message', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
-            },
             body: JSON.stringify({ text: message })
         });
 
-        statusElement.textContent = response.ok ? 'Сообщение отправлено!' : 'Ошибка отправки';
-        statusElement.style.color = response.ok ? 'green' : 'red';
-
         if (response.ok) {
+            statusElement.textContent = 'Сообщение отправлено!';
+            statusElement.style.color = 'green';
             document.getElementById('consultation-message').value = '';
+        } else {
+            const error = await response.json();
+            statusElement.textContent = error.error || 'Ошибка отправки';
+            statusElement.style.color = 'red';
         }
     } catch (error) {
         statusElement.textContent = 'Ошибка подключения';
@@ -161,27 +180,7 @@ document.getElementById('send-message-btn')?.addEventListener('click', async () 
     }
 });
 
-// Обработчики кнопок авторизации
-//document.getElementById('login-btn')?.addEventListener('click', () => {
-//    const email = prompt('Email:');
-//    const password = prompt('Пароль:');
-//    if (email && password) {
-//        loginUser(email, password);
-//    }
-//});
-
-//document.getElementById('register-btn')?.addEventListener('click', () => {
-//    const email = prompt('Email:');
-//    const password = prompt('Пароль:');
-//    const name = prompt('Имя:');
-//    const gender = prompt('Пол (Male/Female/Other):') || 'Other';
-//    const birthDate = prompt('Дата рождения (ГГГГ-ММ-ДД):');
-
-//    if (email && password && name && birthDate) {
-//        registerUser(email, password, name, gender, birthDate);
-//    }
-//});
-
+// Выход
 document.getElementById('logout-btn')?.addEventListener('click', () => {
     authToken = null;
     localStorage.removeItem('authToken');
@@ -189,41 +188,3 @@ document.getElementById('logout-btn')?.addEventListener('click', () => {
     alert('Вы вышли из системы');
     window.location.href = '/';
 });
-
-// Функция входа
-async function loginUser(email, password) {
-    try {
-        const response = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-        });
-
-        if (!response.ok) throw new Error('Неверные данные');
-
-        const data = await response.json();
-        authToken = data.token;
-        localStorage.setItem('authToken', authToken);
-        updateAuthButtons();
-        alert('Вход успешен!');
-    } catch (error) {
-        alert('Ошибка входа: ' + error.message);
-    }
-}
-
-// Функция регистрации
-async function registerUser(email, password, name, gender, birthDate) {
-    try {
-        const response = await fetch('/api/auth/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password, name, gender, birthDate })
-        });
-
-        if (!response.ok) throw new Error('Ошибка регистрации');
-
-        alert('Регистрация успешна! Теперь войдите.');
-    } catch (error) {
-        alert('Ошибка регистрации: ' + error.message);
-    }
-}

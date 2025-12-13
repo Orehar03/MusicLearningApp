@@ -15,16 +15,18 @@ public class DbInitializer
 
     public void Initialize()
     {
-        // Просто создаём таблицы
         _context.Database.EnsureCreated();
 
-        // Всегда проверяем админа
         if (!_context.Users.Any(u => u.Email == "admin@admin.com"))
         {
+            // Генерируем хеш ТОЛЬКО ОДИН РАЗ через BCrypt
+            string adminPassword = "admin";
+            string passwordHash = BCrypt.Net.BCrypt.HashPassword(adminPassword, workFactor: 11);
+
             var admin = new User
             {
                 Email = "admin@admin.com",
-                PasswordHash = "$2a$11$uFp1WdR7zL0xJZq6x7eXiebF9X1jK5YJ0qW9X1jK5YJ0qW9X1jK5Y",
+                PasswordHash = passwordHash, // ✅ Гарантированно правильный хеш
                 Name = "Администратор",
                 Gender = "Other",
                 BirthDate = new DateTime(1990, 1, 1),
@@ -32,11 +34,11 @@ public class DbInitializer
             };
             _context.Users.Add(admin);
             _context.SaveChanges();
-            Console.WriteLine("✅ Админ создан");
+            Console.WriteLine($"✅ Админ создан с хешем: {passwordHash}");
         }
         else
         {
-            Console.WriteLine("ℹ️ Админ уже есть");
+            Console.WriteLine("ℹ️ Админ уже существует");
         }
     }
 }
