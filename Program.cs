@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -7,11 +7,11 @@ using MusicLearningApp.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ��
+// БД
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite("Data Source=app.db"));
 
-// �������
+// Сервисы
 builder.Services.AddScoped<DbInitializer>();
 builder.Services.AddScoped<AuthService>();
 
@@ -26,15 +26,15 @@ builder.Services.AddCors(options =>
     });
 });
 
-// ?? ����������� JwtSettings ����� Options
-builder.Services.Configure<JwtSettings>(options =>
+// 🔥 КРИТИЧЕСКИ ВАЖНО: правильная регистрация JWT
+var jwtKey = "super_secret_key_for_music_app_12345"; // 32+ символа
+builder.Services.AddSingleton(new JwtSettings
 {
-    options.SecretKey = "super_secret_key_for_music_app_12345";
-    options.Issuer = "MusicLearningApp";
-    options.Audience = "MusicLearningAppUsers";
+    SecretKey = jwtKey,
+    Issuer = "MusicLearningApp",
+    Audience = "MusicLearningAppUsers"
 });
 
-// ��������������
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -50,7 +50,23 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = "MusicLearningApp",
         ValidAudience = "MusicLearningAppUsers",
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("super_secret_key_for_music_app_12345"))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+        ClockSkew = TimeSpan.Zero // НЕТ отклонения времени
+    };
+
+    // 🔥 Для отладки: логируем ошибки валидации токена
+    options.Events = new JwtBearerEvents
+    {
+        OnAuthenticationFailed = context =>
+        {
+            Console.WriteLine($"Authentication failed: {context.Exception.Message}");
+            return Task.CompletedTask;
+        },
+        OnTokenValidated = context =>
+        {
+            Console.WriteLine($"Token validated for user: {context.Principal?.Identity?.Name}");
+            return Task.CompletedTask;
+        }
     };
 });
 
@@ -59,7 +75,7 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
-// ������������� ��
+// Создаём БД и админа
 using (var scope = app.Services.CreateScope())
 {
     var dbInitializer = scope.ServiceProvider.GetRequiredService<DbInitializer>();
@@ -71,14 +87,14 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
 }
 
-// ���������� ������� middleware
-app.UseRouting();
-app.UseCors("AllowAll");
-app.UseAuthentication();
-app.UseAuthorization();
-app.UseStaticFiles();
+// 🔥 ПРАВИЛЬНЫЙ ПОРЯДОК MIDDLEWARE
+app.UseCors("AllowAll"); // Сначала CORS
+app.UseStaticFiles();    // Потом статические файлы
+app.UseRouting();        // Потом маршрутизация
+app.UseAuthentication(); // Потом аутентификация
+app.UseAuthorization();  // И наконец авторизация
 
-// ���������
+// Эндпоинты
 app.MapControllers();
 app.MapGet("/", () => Results.Redirect("/index.html"));
 app.MapGet("/materials", () => Results.Redirect("/materials.html"));
@@ -87,7 +103,6 @@ app.MapGet("/consultation", () => Results.Redirect("/consultation.html"));
 
 app.Run();
 
-// ������ ��������
 public class JwtSettings
 {
     public string SecretKey { get; set; } = string.Empty;

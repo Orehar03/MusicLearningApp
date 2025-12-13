@@ -1,5 +1,4 @@
-﻿using BCrypt.Net;
-using MusicLearningApp.Models;
+﻿using MusicLearningApp.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace MusicLearningApp.Data;
@@ -15,30 +14,50 @@ public class DbInitializer
 
     public void Initialize()
     {
+        // Удаляем и создаём заново
+        _context.Database.EnsureDeleted();
         _context.Database.EnsureCreated();
 
-        if (!_context.Users.Any(u => u.Email == "admin@admin.com"))
+        // Создаём админа с правильным хешем
+        var admin = new User
         {
-            // Генерируем хеш ТОЛЬКО ОДИН РАЗ через BCrypt
-            string adminPassword = "admin";
-            string passwordHash = BCrypt.Net.BCrypt.HashPassword(adminPassword, workFactor: 11);
+            Email = "admin@admin.com",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin", workFactor: 11), // ✅ Генерируем заново
+            Name = "Администратор",
+            Gender = "Other",
+            BirthDate = new DateTime(1990, 1, 1),
+            Role = "Admin"
+        };
+        _context.Users.Add(admin);
+        _context.SaveChanges();
+        Console.WriteLine($"✅ Админ создан с хешем: {admin.PasswordHash}");
 
-            var admin = new User
-            {
-                Email = "admin@admin.com",
-                PasswordHash = passwordHash, // ✅ Гарантированно правильный хеш
-                Name = "Администратор",
-                Gender = "Other",
-                BirthDate = new DateTime(1990, 1, 1),
-                Role = "Admin"
-            };
-            _context.Users.Add(admin);
-            _context.SaveChanges();
-            Console.WriteLine($"✅ Админ создан с хешем: {passwordHash}");
-        }
-        else
+        // Создаём тестовые данные
+        SeedTestData();
+    }
+
+    private void SeedTestData()
+    {
+        if (!_context.Lessons.Any())
         {
-            Console.WriteLine("ℹ️ Админ уже существует");
+            _context.Lessons.AddRange(
+                new Models.Lesson { Title = "Основы нотной грамоты", Description = "Текст", VideoPath = "/videos/lesson1.mp4" },
+                new Models.Lesson { Title = "Аккорды для гитары", Description = "Текст", VideoPath = "/videos/lesson2.mp4" }
+            );
+            _context.SaveChanges();
+        }
+
+        if (!_context.Homeworks.Any())
+        {
+            var nextMonday = DateTime.Now.AddDays(7 - (int)DateTime.Now.DayOfWeek);
+            var deadline = new DateTime(nextMonday.Year, nextMonday.Month, nextMonday.Day, 23, 59, 59);
+
+            _context.Homeworks.Add(new Models.Homework
+            {
+                Description = "Напишите названия нот в порядке возрастания",
+                Deadline = deadline
+            });
+            _context.SaveChanges();
         }
     }
 }
