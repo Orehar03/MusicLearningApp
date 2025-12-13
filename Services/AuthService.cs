@@ -22,26 +22,49 @@ public class AuthService
 
     public string? Authenticate(string email, string password)
     {
-        var user = _context.Users.FirstOrDefault(u => u.Email == email);
-        if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
-            return null;
-
-        // Генерация JWT
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.UTF8.GetBytes(_jwtSettings.SecretKey); // Без ? и !
-        var tokenDescriptor = new SecurityTokenDescriptor
+        try
         {
-            Subject = new ClaimsIdentity(new[]
+            var user = _context.Users.FirstOrDefault(u => u.Email == email);
+            if (user == null)
+                return null;
+
+            // Защита от пустого или некорректного хеша
+            if (string.IsNullOrEmpty(user.PasswordHash))
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Role, user.Role)
-            }),
-            Expires = DateTime.UtcNow.AddHours(2),
-            Issuer = _jwtSettings.Issuer,
-            Audience = _jwtSettings.Audience,
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-        };
-        var token = tokenHandler.CreateToken(tokenDescriptor);
-        return tokenHandler.WriteToken(token);
+                Console.WriteLine($"⚠️ Пустой хеш пароля для пользователя: {email}");
+                return null;
+            }
+
+            // Проверяем пароль
+            if (!BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+            {
+                Console.WriteLine($"❌ Неверный пароль для: {email}");
+                return null;
+            }
+
+            // Генерация JWT
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.UTF8.GetBytes(_jwtSettings.SecretKey);
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                    new Claim(ClaimTypes.Role, user.Role)
+                }),
+                Expires = DateTime.UtcNow.AddHours(2),
+                Issuer = _jwtSettings.Issuer,
+                Audience = _jwtSettings.Audience,
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"🔥 Критическая ошибка в AuthService.Authenticate: {ex.Message}");
+            Console.WriteLine(ex.StackTrace);
+            return null; // Возвращаем null вместо падения
+        }
     }
 }

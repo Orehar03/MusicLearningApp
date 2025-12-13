@@ -7,14 +7,15 @@ using MusicLearningApp.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Регистрация сервисов
+// БД
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite("Data Source=app.db"));
 
+// Сервисы
 builder.Services.AddScoped<DbInitializer>();
 builder.Services.AddScoped<AuthService>();
 
-// CORS — разрешаем все для учебного проекта
+// CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -25,15 +26,15 @@ builder.Services.AddCors(options =>
     });
 });
 
-// JWT
-var jwtSettings = new JwtSettings
+// ?? Регистрация JwtSettings через Options
+builder.Services.Configure<JwtSettings>(options =>
 {
-    SecretKey = "super_secret_key_for_music_app_12345",
-    Issuer = "MusicLearningApp",
-    Audience = "MusicLearningAppUsers"
-};
-builder.Services.AddSingleton(jwtSettings);
+    options.SecretKey = "super_secret_key_for_music_app_12345";
+    options.Issuer = "MusicLearningApp";
+    options.Audience = "MusicLearningAppUsers";
+});
 
+// Аутентификация
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -47,9 +48,9 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtSettings.Issuer,
-        ValidAudience = jwtSettings.Audience,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey))
+        ValidIssuer = "MusicLearningApp",
+        ValidAudience = "MusicLearningAppUsers",
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("super_secret_key_for_music_app_12345"))
     };
 });
 
@@ -70,16 +71,15 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
 }
 
-// ?? КРИТИЧЕСКИ ВАЖНЫЙ ПОРЯДОК MIDDLEWARE:
-app.UseRouting();               // 1. Сначала маршрутизация
-app.UseCors("AllowAll");        // 2. Потом CORS
-app.UseAuthentication();        // 3. Аутентификация
-app.UseAuthorization();         // 4. Авторизация
-app.UseStaticFiles();           // 5. Статические файлы
+// Правильный порядок middleware
+app.UseRouting();
+app.UseCors("AllowAll");
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseStaticFiles();
 
 // Эндпоинты
 app.MapControllers();
-
 app.MapGet("/", () => Results.Redirect("/index.html"));
 app.MapGet("/materials", () => Results.Redirect("/materials.html"));
 app.MapGet("/homework", () => Results.Redirect("/homework.html"));
@@ -87,6 +87,7 @@ app.MapGet("/consultation", () => Results.Redirect("/consultation.html"));
 
 app.Run();
 
+// Модель настроек
 public class JwtSettings
 {
     public string SecretKey { get; set; } = string.Empty;
