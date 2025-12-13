@@ -61,6 +61,11 @@
             margin-top: 15px;
             text-align: center;
         }
+
+        #login-status, #register-status {
+            margin-top: 10px;
+            min-height: 20px;
+        }
     </style>
 </head>
 <body>
@@ -69,17 +74,17 @@
             <h2>Вход</h2>
             <div class="form-group">
                 <label for="login-email">Email</label>
-                <input type="email" id="login-email" placeholder="admin@admin.com">
+                <input type="email" id="login-email" placeholder="Ваш email">
             </div>
             <div class="form-group">
                 <label for="login-password">Пароль</label>
-                <input type="password" id="login-password" placeholder="admin">
+                <input type="password" id="login-password" placeholder="Ваш пароль">
             </div>
             <button onclick="login()">Войти</button>
             <div class="switch-form">
                 <p>Нет аккаунта? <a href="#" onclick="showRegister()">Зарегистрироваться</a></p>
             </div>
-            <p id="login-status" style="color: red; margin-top: 10px;"></p>
+            <p id="login-status" style="color: red;"></p>
         </div>
 
         <div id="register-form" style="display:none;">
@@ -94,7 +99,7 @@
             </div>
             <div class="form-group">
                 <label>Пароль</label>
-                <input type="password" id="reg-password" placeholder="Пароль">
+                <input type="password" id="reg-password" placeholder="Не менее 6 символов">
             </div>
             <div class="form-group">
                 <label>Пол</label>
@@ -121,12 +126,11 @@
             <div class="switch-form">
                 <p>Уже есть аккаунт? <a href="#" onclick="showLogin()">Войти</a></p>
             </div>
-            <p id="register-status" style="color: red; margin-top: 10px;"></p>
+            <p id="register-status" style="color: red;"></p>
         </div>
     </div>
 
     <script>
-        // Переключение между формами
         function showRegister() {
             document.getElementById('login-form').style.display = 'none';
             document.getElementById('register-form').style.display = 'block';
@@ -136,7 +140,6 @@
             document.getElementById('login-form').style.display = 'block';
         }
 
-        // Формат даты
         document.getElementById('reg-birthdate').addEventListener('input', function (e) {
             let v = e.target.value.replace(/\D/g, '');
             if (v.length >= 2) v = v.substring(0, 2) + '.' + v.substring(2);
@@ -144,11 +147,11 @@
             e.target.value = v.substring(0, 10);
         });
 
-        // Вход
         async function login() {
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
             const status = document.getElementById('login-status');
+            status.textContent = '';
 
             if (!email || !password) {
                 status.textContent = 'Заполните все поля';
@@ -167,14 +170,14 @@
                     alert('Вход успешен!');
                     window.location.href = '/';
                 } else {
-                    status.textContent = data || 'Неверные данные';
+                    status.textContent = data.error || 'Неверные данные';
                 }
             } catch (err) {
-                status.textContent = 'Ошибка подключения';
+                status.textContent = 'Ошибка подключения к серверу';
+                console.error('Login error:', err);
             }
         }
 
-        // Регистрация
         async function register() {
             const name = document.getElementById('reg-name').value;
             const email = document.getElementById('reg-email').value;
@@ -183,16 +186,16 @@
             const birthDateStr = document.getElementById('reg-birthdate').value;
 
             const status = document.getElementById('register-status');
+            status.textContent = '';
 
             if (!name || !email || !password || !birthDateStr) {
                 status.textContent = 'Заполните все поля';
                 return;
             }
 
-            // Проверка формата ДД.ММ.ГГГГ
             const parts = birthDateStr.split('.');
             if (parts.length !== 3 || parts[0].length !== 2 || parts[1].length !== 2 || parts[2].length !== 4) {
-                status.textContent = 'Неверный формат даты';
+                status.textContent = 'Формат даты: ДД.ММ.ГГГГ';
                 return;
             }
 
@@ -208,12 +211,12 @@
                 if (res.ok) {
                     alert('Регистрация успешна! Теперь войдите.');
                     showLogin();
-                    status.textContent = '';
                 } else {
-                    status.textContent = data || 'Ошибка регистрации';
+                    status.textContent = data.error || (typeof data === 'string' ? data : 'Ошибка регистрации');
                 }
             } catch (err) {
-                status.textContent = 'Ошибка подключения';
+                status.textContent = 'Ошибка подключения к серверу';
+                console.error('Register error:', err);
             }
         }
     </script>

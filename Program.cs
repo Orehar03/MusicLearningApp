@@ -7,14 +7,23 @@ using MusicLearningApp.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Регистрация DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite("Data Source=app.db"));
 
-// Регистрация DbInitializer (вот чего не хватало!)
 builder.Services.AddScoped<DbInitializer>();
+builder.Services.AddScoped<AuthService>();
 
-// JWT-настройки (без appsettings.json — проще)
+// Добавляем CORS — разрешаем все запросы (для учебного проекта)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
 var jwtSettings = new JwtSettings
 {
     SecretKey = "super_secret_key_for_music_app_12345",
@@ -23,7 +32,6 @@ var jwtSettings = new JwtSettings
 };
 builder.Services.AddSingleton(jwtSettings);
 
-// Аутентификация
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -45,11 +53,9 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
-builder.Services.AddScoped<AuthService>();
 
 var app = builder.Build();
 
-// Инициализация БД при старте
 using (var scope = app.Services.CreateScope())
 {
     var dbInitializer = scope.ServiceProvider.GetRequiredService<DbInitializer>();
@@ -61,14 +67,17 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
 }
 
-app.UseStaticFiles(); // Обязательно для отдачи HTML/CSS/JS
+// Включаем CORS (обязательно до UseRouting!)
+app.UseCors("AllowAll");
+
+app.UseStaticFiles(); // <-- это автоматически отдаёт auth.html, index.html и т.д.
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
-// Маршруты для HTML-страниц (без них будет 404)
+// Маршруты для HTML-страниц — только редиректы
 app.MapGet("/", () => Results.Redirect("/index.html"));
 app.MapGet("/materials", () => Results.Redirect("/materials.html"));
 app.MapGet("/homework", () => Results.Redirect("/homework.html"));
