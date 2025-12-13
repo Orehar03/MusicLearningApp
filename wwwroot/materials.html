@@ -5,6 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Обучающий материал</title>
     <link rel="stylesheet" href="/css/site.css">
+    <style>
+        .lesson-item {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+        .lesson-title {
+            font-size: 1.4em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .video-container {
+            margin: 15px 0;
+        }
+    </style>
 </head>
 <body>
     <nav>
@@ -18,8 +38,27 @@
     </nav>
     <div id="content">
         <h1>Обучающие материалы</h1>
-        <div id="lessons-container">
-            <!-- Уроки будут загружены через JS -->
+
+        <div class="lesson-item">
+            <div class="lesson-title">Урок №1</div>
+            <p>Текст с описанием первого урока.</p>
+            <div class="video-container">
+                <video controls width="100%">
+                    <source src="/videos/lesson1.mp4" type="video/mp4">
+                    Ваш браузер не поддерживает видео.
+                </video>
+            </div>
+        </div>
+
+        <div class="lesson-item">
+            <div class="lesson-title">Урок №2</div>
+            <p>Текст с описанием второго урока.</p>
+            <div class="video-container">
+                <video controls width="100%">
+                    <source src="/videos/lesson2.mp4" type="video/mp4">
+                    Ваш браузер не поддерживает видео.
+                </video>
+            </div>
         </div>
     </div>
     <script src="/js/site.js"></script>

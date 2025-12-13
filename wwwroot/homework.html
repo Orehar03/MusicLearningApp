@@ -5,6 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Домашнее задание</title>
     <link rel="stylesheet" href="/css/site.css">
+    <style>
+        .homework-header {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .homework-description {
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .submission-area {
+            margin-top: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+        .file-upload {
+            margin: 10px 0;
+        }
+
+        .deadline-info {
+            color: #e74c3c;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+    </style>
 </head>
 <body>
     <nav>
@@ -18,10 +48,63 @@
     </nav>
     <div id="content">
         <h1>Домашнее задание</h1>
-        <div id="homework-container">
-            <!-- Задания будут загружены через JS -->
+
+        <div class="homework-item">
+            <div class="homework-header">Домашка №1</div>
+            <div class="homework-description">
+                Текст текст текст текст текст текст текст текст текст текст текст текст текст.<br>
+                1. текст текст текст текст текст текст;<br>
+                2. текст текст текст текст текст текст текст;<br>
+                3. текст текст текст текст текст текст текст текст текст.
+            </div>
+
+            <div class="deadline-info">
+                Осталось: 2 дн. 5 ч.
+            </div>
+
+            <div class="submission-area">
+                <h3>Ваш ответ</h3>
+                <textarea id="homework-text" rows="6" placeholder="Напишите ваш ответ здесь..." style="width: 100%; padding: 8px; margin-bottom: 10px;"></textarea>
+
+                <div class="file-upload">
+                    <label for="homework-files">Прикрепить файлы (необязательно):</label>
+                    <input type="file" id="homework-files" multiple style="margin-top: 5px; display: block;">
+                </div>
+
+                <button id="submit-homework-btn" style="padding: 8px 15px; background: #333; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    Отправить задание
+                </button>
+                <p id="submission-status" style="margin-top: 10px; min-height: 20px;"></p>
+            </div>
         </div>
     </div>
     <script src="/js/site.js"></script>
+    <script>
+        document.getElementById('submit-homework-btn')?.addEventListener('click', async () => {
+            const text = document.getElementById('homework-text').value;
+            const files = document.getElementById('homework-files').files;
+            const statusElement = document.getElementById('submission-status');
+
+            if (!text.trim() && files.length === 0) {
+                statusElement.textContent = 'Введите ответ или прикрепите файлы';
+                statusElement.style.color = 'red';
+                return;
+            }
+
+            // Для учебного проекта симулируем отправку
+            statusElement.textContent = 'Отправляется...';
+            statusElement.style.color = 'blue';
+
+            setTimeout(() => {
+                statusElement.textContent = '✅ Задание успешно отправлено!';
+                statusElement.style.color = 'green';
+                document.getElementById('homework-text').value = '';
+                document.getElementById('homework-files').value = '';
+
+                // Обновляем статус дедлайна
+                document.querySelector('.deadline-info').textContent = 'Статус: Задание отправлено';
+            }, 1500);
+        });
+    </script>
 </body>
 </html>

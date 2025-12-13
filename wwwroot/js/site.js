@@ -1,4 +1,4 @@
-﻿// 🔥 ВСЕГДА читаем токен из localStorage при загрузке
+﻿// ВСЕГДА читаем токен из localStorage при загрузке
 let authToken = localStorage.getItem('authToken') || null;
 console.log('Токен при загрузке:', authToken ? 'есть' : 'нет');
 
@@ -6,8 +6,16 @@ document.addEventListener('DOMContentLoaded', () => {
     updateAuthButtons();
     loadPageContent();
 
-    // 🔥 Автоматическая проверка сессии
+    // Автоматическая проверка сессии
     checkSession();
+});
+
+document.getElementById('logout-btn')?.addEventListener('click', () => {
+    localStorage.removeItem('authToken');
+    authToken = null;
+    updateAuthButtons();
+    alert('Вы вышли из системы');
+    window.location.href = '/';
 });
 
 function checkSession() {

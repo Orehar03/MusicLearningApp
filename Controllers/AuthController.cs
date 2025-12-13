@@ -1,10 +1,12 @@
 ﻿using BCrypt.Net;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MusicLearningApp.Data;
 using MusicLearningApp.Models;
 using MusicLearningApp.Services;
 using System.Net;
+using System.Security.Claims;
 
 namespace MusicLearningApp.Controllers;
 
@@ -75,6 +77,14 @@ public class AuthController : ControllerBase
             Console.WriteLine($"Ошибка входа: {ex.Message}");
             return StatusCode(500, new { error = "Внутренняя ошибка сервера" });
         }
+    }
+    [HttpGet("me")]
+    [Authorize]
+    public IActionResult GetCurrentUser()
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+        return Ok(new { userId, role });
     }
 }
 
