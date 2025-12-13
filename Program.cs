@@ -7,13 +7,14 @@ using MusicLearningApp.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Регистрация сервисов
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite("Data Source=app.db"));
 
 builder.Services.AddScoped<DbInitializer>();
 builder.Services.AddScoped<AuthService>();
 
-// Добавляем CORS — разрешаем все запросы (для учебного проекта)
+// CORS — разрешаем все для учебного проекта
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -24,6 +25,7 @@ builder.Services.AddCors(options =>
     });
 });
 
+// JWT
 var jwtSettings = new JwtSettings
 {
     SecretKey = "super_secret_key_for_music_app_12345",
@@ -56,6 +58,7 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
+// Инициализация БД
 using (var scope = app.Services.CreateScope())
 {
     var dbInitializer = scope.ServiceProvider.GetRequiredService<DbInitializer>();
@@ -67,17 +70,16 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
 }
 
-// Включаем CORS (обязательно до UseRouting!)
-app.UseCors("AllowAll");
+// ?? КРИТИЧЕСКИ ВАЖНЫЙ ПОРЯДОК MIDDLEWARE:
+app.UseRouting();               // 1. Сначала маршрутизация
+app.UseCors("AllowAll");        // 2. Потом CORS
+app.UseAuthentication();        // 3. Аутентификация
+app.UseAuthorization();         // 4. Авторизация
+app.UseStaticFiles();           // 5. Статические файлы
 
-app.UseStaticFiles(); // <-- это автоматически отдаёт auth.html, index.html и т.д.
-app.UseRouting();
-app.UseAuthentication();
-app.UseAuthorization();
-
+// Эндпоинты
 app.MapControllers();
 
-// Маршруты для HTML-страниц — только редиректы
 app.MapGet("/", () => Results.Redirect("/index.html"));
 app.MapGet("/materials", () => Results.Redirect("/materials.html"));
 app.MapGet("/homework", () => Results.Redirect("/homework.html"));

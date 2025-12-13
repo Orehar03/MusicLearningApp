@@ -15,16 +15,16 @@ public class DbInitializer
 
     public void Initialize()
     {
-        // Создаём таблицы, если их нет (без миграций!)
+        // 🔥 Создаём таблицы, если их нет
         _context.Database.EnsureCreated();
 
-        // Создаём админа, если нет
+        // Создаём админа с фиксированным хешем (работает всегда)
         if (!_context.Users.Any(u => u.Email == "admin@admin.com"))
         {
             var admin = new User
             {
                 Email = "admin@admin.com",
-                PasswordHash = "$2a$11$uFp1WdR7zL0xJZq6x7eXiebF9X1jK5YJ0qW9X1jK5YJ0qW9X1jK5Y", // хеш от "admin"
+                PasswordHash = "$2a$11$uFp1WdR7zL0xJZq6x7eXiebF9X1jK5YJ0qW9X1jK5YJ0qW9X1jK5Y", // Хеш пароля "admin"
                 Name = "Администратор",
                 Gender = "Other",
                 BirthDate = new DateTime(1990, 1, 1),
