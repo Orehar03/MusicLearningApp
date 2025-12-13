@@ -26,13 +26,17 @@ public class AuthController : ControllerBase
         if (_context.Users.Any(u => u.Email == model.Email))
             return BadRequest("Email уже используется");
 
+        // 🔹 Попытка преобразовать строку даты в DateTime
+        if (!DateTime.TryParse(model.BirthDate, out var birthDate))
+            return BadRequest("Неверный формат даты. Используйте ГГГГ-ММ-ДД.");
+
         var user = new User
         {
             Email = model.Email,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password),
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password, workFactor: 11),
             Name = model.Name,
             Gender = model.Gender,
-            BirthDate = model.BirthDate,
+            BirthDate = birthDate, // ← теперь это DateTime, а не строка
             Role = "User"
         };
 
@@ -58,7 +62,7 @@ public class RegisterModel
     public string Password { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string Gender { get; set; } = "Other";
-    public DateTime BirthDate { get; set; }
+    public string BirthDate { get; set; } = string.Empty; // строка в формате "ГГГГ-ММ-ДД"
 }
 
 public class LoginModel

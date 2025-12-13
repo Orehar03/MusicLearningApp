@@ -1,33 +1,22 @@
 ﻿// Глобальная переменная для токена
 let authToken = localStorage.getItem('authToken') || null;
 
-// Проверка авторизации при загрузке страницы
 document.addEventListener('DOMContentLoaded', () => {
     updateAuthButtons();
     loadPageContent();
 });
 
-// Обновление состояния кнопок авторизации
 function updateAuthButtons() {
-    const loginBtn = document.getElementById('login-btn');
-    const registerBtn = document.getElementById('register-btn');
     const logoutBtn = document.getElementById('logout-btn');
-
     if (authToken) {
-        loginBtn.style.display = 'none';
-        registerBtn.style.display = 'none';
         logoutBtn.style.display = 'inline-block';
     } else {
-        loginBtn.style.display = 'inline-block';
-        registerBtn.style.display = 'inline-block';
         logoutBtn.style.display = 'none';
     }
 }
 
-// Загрузка контента в зависимости от страницы
 function loadPageContent() {
     const path = window.location.pathname;
-
     if (path.includes('materials')) {
         loadLessons();
     } else if (path.includes('homework')) {
@@ -173,31 +162,32 @@ document.getElementById('send-message-btn')?.addEventListener('click', async () 
 });
 
 // Обработчики кнопок авторизации
-document.getElementById('login-btn')?.addEventListener('click', () => {
-    const email = prompt('Email:');
-    const password = prompt('Пароль:');
-    if (email && password) {
-        loginUser(email, password);
-    }
-});
+//document.getElementById('login-btn')?.addEventListener('click', () => {
+//    const email = prompt('Email:');
+//    const password = prompt('Пароль:');
+//    if (email && password) {
+//        loginUser(email, password);
+//    }
+//});
 
-document.getElementById('register-btn')?.addEventListener('click', () => {
-    const email = prompt('Email:');
-    const password = prompt('Пароль:');
-    const name = prompt('Имя:');
-    const gender = prompt('Пол (Male/Female/Other):') || 'Other';
-    const birthDate = prompt('Дата рождения (ГГГГ-ММ-ДД):');
+//document.getElementById('register-btn')?.addEventListener('click', () => {
+//    const email = prompt('Email:');
+//    const password = prompt('Пароль:');
+//    const name = prompt('Имя:');
+//    const gender = prompt('Пол (Male/Female/Other):') || 'Other';
+//    const birthDate = prompt('Дата рождения (ГГГГ-ММ-ДД):');
 
-    if (email && password && name && birthDate) {
-        registerUser(email, password, name, gender, birthDate);
-    }
-});
+//    if (email && password && name && birthDate) {
+//        registerUser(email, password, name, gender, birthDate);
+//    }
+//});
 
 document.getElementById('logout-btn')?.addEventListener('click', () => {
     authToken = null;
     localStorage.removeItem('authToken');
     updateAuthButtons();
     alert('Вы вышли из системы');
+    window.location.href = '/';
 });
 
 // Функция входа
