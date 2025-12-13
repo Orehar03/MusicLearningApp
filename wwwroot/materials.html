@@ -23,6 +23,25 @@
 
         .video-container {
             margin: 15px 0;
+            position: relative;
+            padding-top: 56.25%; /* Соотношение 16:9 */
+            height: 0;
+            overflow: hidden;
+        }
+
+            .video-container video {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                border: 1px solid #ccc;
+                background-color: #000;
+            }
+
+        .video-description {
+            margin: 10px 0;
+            color: #666;
         }
     </style>
 </head>
@@ -43,22 +62,24 @@
             <div class="lesson-title">Урок №1</div>
             <p>Текст с описанием первого урока.</p>
             <div class="video-container">
-                <video controls width="100%">
+                <video controls>
                     <source src="/videos/lesson1.mp4" type="video/mp4">
                     Ваш браузер не поддерживает видео.
                 </video>
             </div>
+            <div class="video-description">Длительность: 7:43</div>
         </div>
 
         <div class="lesson-item">
             <div class="lesson-title">Урок №2</div>
             <p>Текст с описанием второго урока.</p>
             <div class="video-container">
-                <video controls width="100%">
+                <video controls>
                     <source src="/videos/lesson2.mp4" type="video/mp4">
                     Ваш браузер не поддерживает видео.
                 </video>
             </div>
+            <div class="video-description">Длительность: 11:09</div>
         </div>
     </div>
     <script src="/js/site.js"></script>

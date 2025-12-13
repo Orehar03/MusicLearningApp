@@ -13,22 +13,67 @@
             padding: 15px;
             margin-bottom: 20px;
             border-radius: 5px;
+            background-color: #f9f9f9;
         }
 
         .message-item {
-            padding: 10px;
-            margin-bottom: 10px;
+            padding: 12px;
+            margin-bottom: 12px;
             border-bottom: 1px solid #eee;
+            background-color: white;
+            border-radius: 4px;
+        }
+
+        .admin-message {
+            background-color: #e8f4fd;
+            border-left: 3px solid #2196f3;
         }
 
         .message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .message-author {
             font-weight: bold;
-            color: #333;
+            color: #2c3e50;
         }
 
         .message-time {
-            font-size: 0.8em;
-            color: #777;
+            font-size: 0.85em;
+            color: #7f8c8d;
+        }
+
+        .message-content {
+            line-height: 1.5;
+            color: #34495e;
+        }
+
+        .user-section {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        #message-status {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .status-success {
+            background-color: #d4edda;
+            color: #155724;
+            display: block;
+        }
+
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            display: block;
         }
     </style>
 </head>
@@ -46,78 +91,119 @@
         <h1>Онлайн-консультация</h1>
 
         <div id="user-section" style="display:none;">
-            <h2>Отправить сообщение администратору</h2>
-            <textarea id="consultation-message" rows="5" placeholder="Ваше сообщение..."></textarea>
-            <button id="send-message-btn">Отправить</button>
-            <p id="message-status"></p>
+            <div class="user-section">
+                <h2>Отправить сообщение администратору</h2>
+                <textarea id="consultation-message" rows="5" placeholder="Ваше сообщение..." style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px;"></textarea>
+                <button id="send-message-btn" style="padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    Отправить сообщение
+                </button>
+                <p id="message-status"></p>
+            </div>
         </div>
 
         <div id="admin-section" style="display:none;">
             <h2>Сообщения от пользователей</h2>
             <div class="messages-container" id="admin-messages-container">
-                <!-- Сообщения будут загружены через JS -->
+                <p>Загрузка сообщений...</p>
             </div>
+        </div>
+
+        <div id="auth-error" style="display:none; color: #e74c3c; background: #fadbd8; padding: 15px; border-radius: 5px; margin-top: 20px;">
+            Ошибка авторизации. Пожалуйста, <a href="/auth.html" style="color: #c0392b; text-decoration: underline;">войдите снова</a>.
         </div>
     </div>
     <script src="/js/site.js"></script>
     <script>
-        // Загружаем данные о текущем пользователе
-        async function loadConsultationPage() {
+        async function loadCurrentUser() {
             try {
                 const response = await apiRequest('/api/auth/me');
-                const userData = await response.json();
-
-                if (userData.role === 'Admin') {
-                    document.getElementById('user-section').style.display = 'none';
-                    document.getElementById('admin-section').style.display = 'block';
-                    loadAdminMessages();
-                } else {
-                    document.getElementById('user-section').style.display = 'block';
-                    document.getElementById('admin-section').style.display = 'none';
+                if (!response.ok) {
+                    throw new Error('Ошибка авторизации');
                 }
+                return await response.json();
             } catch (error) {
                 console.error('Ошибка загрузки данных пользователя:', error);
-                alert('Ошибка авторизации. Пожалуйста, войдите снова.');
-                window.location.href = '/auth.html';
+                document.getElementById('auth-error').style.display = 'block';
+                return null;
+            }
+        }
+
+        async function loadConsultationPage() {
+            const currentUser = await loadCurrentUser();
+            if (!currentUser) return;
+
+            const userSection = document.getElementById('user-section');
+            const adminSection = document.getElementById('admin-section');
+
+            if (currentUser.role === 'Admin') {
+                userSection.style.display = 'none';
+                adminSection.style.display = 'block';
+                loadAdminMessages();
+            } else {
+                userSection.style.display = 'block';
+                adminSection.style.display = 'none';
             }
         }
 
         async function loadAdminMessages() {
             try {
                 const response = await apiRequest('/api/adminconsultation/messages');
-                const messages = await response.json();
-
-                const container = document.getElementById('admin-messages-container');
-                if (messages.length === 0) {
-                    container.innerHTML = '<p>Нет новых сообщений</p>';
-                    return;
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Ошибка загрузки сообщений');
                 }
 
-                container.innerHTML = messages.map(msg => `
-                        <div class="message-item">
-                            <div class="message-header">
-                                ${msg.userName} <span class="message-time">(${new Date(msg.timestamp).toLocaleString('ru-RU')})</span>
-                            </div>
-                            <div class="message-text">
-                                <strong>Обращение:</strong> ${msg.text}
-                            </div>
-                        </div>
-                    `).join('');
+                const messages = await response.json();
+                renderAdminMessages(messages);
             } catch (error) {
                 console.error('Ошибка загрузки сообщений:', error);
-                document.getElementById('admin-messages-container').innerHTML = '<p>Ошибка загрузки сообщений</p>';
+                document.getElementById('admin-messages-container').innerHTML = `
+                        <div class="message-item admin-message">
+                            <div class="message-content">
+                                Ошибка загрузки сообщений: ${error.message}
+                            </div>
+                        </div>
+                    `;
             }
         }
 
-        document.getElementById('send-message-btn')?.addEventListener('click', async () => {
-            const message = document.getElementById('consultation-message').value;
-            const statusElement = document.getElementById('message-status');
+        function renderAdminMessages(messages) {
+            const container = document.getElementById('admin-messages-container');
 
-            if (!message.trim()) {
-                statusElement.textContent = 'Введите сообщение';
-                statusElement.style.color = 'red';
+            if (messages.length === 0) {
+                container.innerHTML = `
+                        <div class="message-item admin-message">
+                            <div class="message-content">
+                                Нет новых сообщений от пользователей
+                            </div>
+                        </div>
+                    `;
                 return;
             }
+
+            container.innerHTML = messages.map(msg => `
+                    <div class="message-item admin-message">
+                        <div class="message-header">
+                            <div class="message-author">${msg.userName}</div>
+                            <div class="message-time">${new Date(msg.timestamp).toLocaleString('ru-RU')}</div>
+                        </div>
+                        <div class="message-content">
+                            <strong>Обращение:</strong> ${msg.text}
+                        </div>
+                    </div>
+                `).join('');
+        }
+
+        document.getElementById('send-message-btn')?.addEventListener('click', async () => {
+            const message = document.getElementById('consultation-message').value.trim();
+            const statusElement = document.getElementById('message-status');
+
+            if (!message) {
+                showStatus('Введите сообщение', 'error');
+                return;
+            }
+
+            showStatus('Отправка...', 'info');
 
             try {
                 const response = await apiRequest('/api/consultation/message', {
@@ -125,23 +211,27 @@
                     body: JSON.stringify({ text: message })
                 });
 
-                if (response.ok) {
-                    statusElement.textContent = 'Сообщение отправлено!';
-                    statusElement.style.color = 'green';
-                    document.getElementById('consultation-message').value = '';
-                } else {
+                if (!response.ok) {
                     const error = await response.json();
-                    statusElement.textContent = error.error || 'Ошибка отправки';
-                    statusElement.style.color = 'red';
+                    throw new Error(error.error || 'Ошибка отправки');
                 }
+
+                showStatus('Сообщение успешно отправлено!', 'success');
+                document.getElementById('consultation-message').value = '';
             } catch (error) {
-                statusElement.textContent = 'Ошибка подключения';
-                statusElement.style.color = 'red';
+                console.error('Ошибка отправки сообщения:', error);
+                showStatus('Ошибка отправки: ' + error.message, 'error');
             }
         });
 
+        function showStatus(message, type) {
+            const statusElement = document.getElementById('message-status');
+            statusElement.textContent = message;
+            statusElement.className = type === 'success' ? 'status-success' : 'status-error';
+        }
+
         // Загружаем страницу при старте
-        document.addEventListener('DOMContentLoaded', loadConsultationPage);
+        loadConsultationPage();
     </script>
 </body>
 </html>

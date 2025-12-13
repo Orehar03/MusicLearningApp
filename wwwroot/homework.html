@@ -10,11 +10,13 @@
             font-size: 1.5em;
             font-weight: bold;
             margin-bottom: 15px;
+            color: #2c3e50;
         }
 
         .homework-description {
             line-height: 1.6;
             margin-bottom: 20px;
+            color: #34495e;
         }
 
         .submission-area {
@@ -25,14 +27,22 @@
             background-color: #f9f9f9;
         }
 
-        .file-upload {
-            margin: 10px 0;
-        }
-
         .deadline-info {
             color: #e74c3c;
             font-weight: bold;
             margin: 10px 0;
+            font-size: 1.1em;
+        }
+
+        .user-only {
+            display: none;
+        }
+
+        .admin-view {
+            background-color: #e8f4fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
         }
     </style>
 </head>
@@ -62,24 +72,53 @@
                 Осталось: 2 дн. 5 ч.
             </div>
 
-            <div class="submission-area">
+            <div class="user-only submission-area">
                 <h3>Ваш ответ</h3>
-                <textarea id="homework-text" rows="6" placeholder="Напишите ваш ответ здесь..." style="width: 100%; padding: 8px; margin-bottom: 10px;"></textarea>
+                <textarea id="homework-text" rows="6" placeholder="Напишите ваш ответ здесь..." style="width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px;"></textarea>
 
                 <div class="file-upload">
-                    <label for="homework-files">Прикрепить файлы (необязательно):</label>
-                    <input type="file" id="homework-files" multiple style="margin-top: 5px; display: block;">
+                    <label for="homework-files" style="display: block; margin-bottom: 5px;">Прикрепить файлы (необязательно):</label>
+                    <input type="file" id="homework-files" multiple style="margin-top: 5px; display: block; padding: 5px;">
                 </div>
 
-                <button id="submit-homework-btn" style="padding: 8px 15px; background: #333; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                <button id="submit-homework-btn" style="padding: 8px 15px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px;">
                     Отправить задание
                 </button>
                 <p id="submission-status" style="margin-top: 10px; min-height: 20px;"></p>
+            </div>
+
+            <div class="admin-view" id="admin-view" style="display: none;">
+                <h3>Просмотр домашнего задания (только для администратора)</h3>
+                <p>В данном разделе администратор может просматривать задания, но не отправлять их.</p>
+                <p>Для проверки работ учеников перейдите в соответствующий раздел административной панели.</p>
             </div>
         </div>
     </div>
     <script src="/js/site.js"></script>
     <script>
+        async function loadHomeworkPage() {
+            try {
+                const response = await apiRequest('/api/auth/me');
+                if (!response.ok) {
+                    throw new Error('Ошибка авторизации');
+                }
+
+                const userData = await response.json();
+
+                if (userData.role === 'Admin') {
+                    document.querySelector('.user-only').style.display = 'none';
+                    document.getElementById('admin-view').style.display = 'block';
+                } else {
+                    document.querySelector('.user-only').style.display = 'block';
+                    document.getElementById('admin-view').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки данных пользователя:', error);
+                // По умолчанию показываем форму для пользователя
+                document.querySelector('.user-only').style.display = 'block';
+            }
+        }
+
         document.getElementById('submit-homework-btn')?.addEventListener('click', async () => {
             const text = document.getElementById('homework-text').value;
             const files = document.getElementById('homework-files').files;
@@ -91,9 +130,8 @@
                 return;
             }
 
-            // Для учебного проекта симулируем отправку
             statusElement.textContent = 'Отправляется...';
-            statusElement.style.color = 'blue';
+            statusElement.style.color = '#3498db';
 
             setTimeout(() => {
                 statusElement.textContent = '✅ Задание успешно отправлено!';
@@ -105,6 +143,9 @@
                 document.querySelector('.deadline-info').textContent = 'Статус: Задание отправлено';
             }, 1500);
         });
+
+        // Загружаем страницу при старте
+        loadHomeworkPage();
     </script>
 </body>
 </html>
