@@ -15,14 +15,16 @@ public class DbInitializer
 
     public void Initialize()
     {
-        _context.Database.Migrate();
+        // Создаём таблицы, если их нет (без миграций!)
+        _context.Database.EnsureCreated();
 
+        // Создаём админа, если нет
         if (!_context.Users.Any(u => u.Email == "admin@admin.com"))
         {
             var admin = new User
             {
                 Email = "admin@admin.com",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin"), // ПОЛНЫЙ ПУТЬ!
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin"),
                 Name = "Администратор",
                 Gender = "Other",
                 BirthDate = new DateTime(1990, 1, 1),
