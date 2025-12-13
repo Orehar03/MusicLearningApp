@@ -212,7 +212,7 @@
                     alert('Регистрация успешна! Теперь войдите.');
                     showLogin();
                 } else {
-                    status.textContent = data.error || (typeof data === 'string' ? data : 'Ошибка регистрации');
+                    status.textContent = data.error || 'Ошибка регистрации';
                 }
             } catch (err) {
                 status.textContent = 'Ошибка подключения к серверу';

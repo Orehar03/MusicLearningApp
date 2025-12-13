@@ -27,13 +27,13 @@ public class AuthController : ControllerBase
         try
         {
             if (string.IsNullOrWhiteSpace(model.Email) || string.IsNullOrWhiteSpace(model.Password))
-                return BadRequest("Email и пароль обязательны");
+                return BadRequest(new { error = "Email и пароль обязательны" });
 
             if (_context.Users.Any(u => u.Email == model.Email))
-                return BadRequest("Email уже используется");
+                return BadRequest(new { error = "Email уже используется" });
 
             if (!DateTime.TryParse(model.BirthDate, out var birthDate))
-                return BadRequest("Неверный формат даты. Используйте ГГГГ-ММ-ДД.");
+                return BadRequest(new { error = "Неверный формат даты. Используйте ГГГГ-ММ-ДД." });
 
             var user = new User
             {
@@ -47,14 +47,12 @@ public class AuthController : ControllerBase
 
             _context.Users.Add(user);
             _context.SaveChanges();
-            return Ok("Регистрация успешна");
+            return Ok(new { message = "Регистрация успешна" });
         }
         catch (Exception ex)
         {
-            // Логируем ошибку на сервере (в консоль)
             Console.WriteLine($"Ошибка регистрации: {ex.Message}");
-            Console.WriteLine(ex.StackTrace);
-            return StatusCode(500, "Внутренняя ошибка сервера");
+            return StatusCode(500, new { error = "Внутренняя ошибка сервера" });
         }
     }
 
@@ -64,19 +62,18 @@ public class AuthController : ControllerBase
         try
         {
             if (string.IsNullOrWhiteSpace(model.Email) || string.IsNullOrWhiteSpace(model.Password))
-                return BadRequest("Email и пароль обязательны");
+                return BadRequest(new { error = "Email и пароль обязательны" });
 
             var token = _authService.Authenticate(model.Email, model.Password);
             if (token == null)
-                return Unauthorized("Неверные данные");
+                return Unauthorized(new { error = "Неверные данные" });
 
             return Ok(new { Token = token });
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Ошибка входа: {ex.Message}");
-            Console.WriteLine(ex.StackTrace);
-            return StatusCode(500, "Внутренняя ошибка сервера");
+            return StatusCode(500, new { error = "Внутренняя ошибка сервера" });
         }
     }
 }
