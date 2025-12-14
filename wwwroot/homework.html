@@ -37,13 +37,6 @@
         .user-only {
             display: none;
         }
-
-        .admin-view {
-            background-color: #e8f4fd;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 20px;
-        }
     </style>
 </head>
 <body>
@@ -52,7 +45,9 @@
         <a href="/materials">Обучающий материал</a>
         <a href="/consultation">Онлайн-консультация</a>
         <div id="auth-buttons">
-            <a href="/auth.html" style="color: white; text-decoration: none; margin-left: 10px;">Вход / Регистрация</a>
+            <span id="login-link-container">
+                <a href="/auth.html" style="color: white; text-decoration: none; margin-left: 10px;">Вход / Регистрация</a>
+            </span>
             <button id="logout-btn" style="display:none; margin-left: 10px;">Выйти</button>
         </div>
     </nav>
@@ -68,9 +63,8 @@
                 3. текст текст текст текст текст текст текст текст текст.
             </div>
 
-            <div class="deadline-info">
-                Осталось: 2 дн. 5 ч.
-            </div>
+            <!-- Элемент для отображения таймера -->
+            <p class="deadline-info" id="deadline-timer">Загрузка...</p>
 
             <div class="user-only submission-area">
                 <h3>Ваш ответ</h3>
@@ -86,38 +80,71 @@
                 </button>
                 <p id="submission-status" style="margin-top: 10px; min-height: 20px;"></p>
             </div>
-
-            <div class="admin-view" id="admin-view" style="display: none;">
-                <h3>Просмотр домашнего задания (только для администратора)</h3>
-                <p>В данном разделе администратор может просматривать задания, но не отправлять их.</p>
-                <p>Для проверки работ учеников перейдите в соответствующий раздел административной панели.</p>
-            </div>
         </div>
     </div>
     <script src="/js/site.js"></script>
     <script>
-        async function loadHomeworkPage() {
-            try {
-                const response = await apiRequest('/api/auth/me');
-                if (!response.ok) {
-                    throw new Error('Ошибка авторизации');
-                }
+        // Функция для обновления таймера
+        function updateDeadline() {
+            const now = new Date();
+            const currentDay = now.getDay(); // 0 - Вс, 1 - Пн, ..., 6 - Сб
+            const daysUntilSunday = (7 - currentDay) % 7 || 7; // Если сегодня воскресенье, получаем 7 (следующее воскресенье)
 
-                const userData = await response.json();
+            const deadline = new Date(now);
+            deadline.setDate(now.getDate() + daysUntilSunday);
+            deadline.setHours(23, 59, 59, 999); // Устанавливаем время на 23:59:59
 
-                if (userData.role === 'Admin') {
-                    document.querySelector('.user-only').style.display = 'none';
-                    document.getElementById('admin-view').style.display = 'block';
-                } else {
-                    document.querySelector('.user-only').style.display = 'block';
-                    document.getElementById('admin-view').style.display = 'none';
-                }
-            } catch (error) {
-                console.error('Ошибка загрузки данных пользователя:', error);
-                // По умолчанию показываем форму для пользователя
-                document.querySelector('.user-only').style.display = 'block';
+            const diff = deadline - now;
+
+            if (diff <= 0) {
+                document.getElementById('deadline-timer').textContent = 'Дедлайн истек';
+                return;
             }
+
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+            let timeString = '';
+            if (days > 0) {
+                timeString = `${days} дн. ${hours} ч.`;
+            } else {
+                timeString = `${hours} ч. ${minutes} мин. ${seconds} сек.`;
+            }
+
+            document.getElementById('deadline-timer').textContent = `Осталось: ${timeString}`;
         }
+
+        // Запускаем таймер при загрузке страницы
+        document.addEventListener('DOMContentLoaded', () => {
+            updateDeadline(); // Вызываем сразу, чтобы не ждать секунду
+            setInterval(updateDeadline, 1000); // Обновляем каждую секунду
+
+            // Показываем/скрываем форму для отправки в зависимости от роли
+            async function loadHomeworkPage() {
+                try {
+                    const response = await apiRequest('/api/auth/me');
+                    if (!response.ok) {
+                        throw new Error('Ошибка авторизации');
+                    }
+
+                    const userData = await response.json();
+
+                    if (userData.role === 'Admin') {
+                        document.querySelector('.user-only').style.display = 'none';
+                    } else {
+                        document.querySelector('.user-only').style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error('Ошибка загрузки данных пользователя:', error);
+                    // По умолчанию показываем форму для пользователя
+                    document.querySelector('.user-only').style.display = 'block';
+                }
+            }
+
+            loadHomeworkPage();
+        });
 
         document.getElementById('submit-homework-btn')?.addEventListener('click', async () => {
             const text = document.getElementById('homework-text').value;
@@ -134,18 +161,12 @@
             statusElement.style.color = '#3498db';
 
             setTimeout(() => {
-                statusElement.textContent = '✅ Задание успешно отправлено!';
+                statusElement.textContent = 'Задание успешно отправлено!';
                 statusElement.style.color = 'green';
                 document.getElementById('homework-text').value = '';
                 document.getElementById('homework-files').value = '';
-
-                // Обновляем статус дедлайна
-                document.querySelector('.deadline-info').textContent = 'Статус: Задание отправлено';
             }, 1500);
         });
-
-        // Загружаем страницу при старте
-        loadHomeworkPage();
     </script>
 </body>
 </html>

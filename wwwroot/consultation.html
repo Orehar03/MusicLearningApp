@@ -83,7 +83,9 @@
         <a href="/materials">Обучающий материал</a>
         <a href="/homework">Домашнее задание</a>
         <div id="auth-buttons">
-            <a href="/auth.html" style="color: white; text-decoration: none; margin-left: 10px;">Вход / Регистрация</a>
+            <span id="login-link-container">
+                <a href="/auth.html" style="color: white; text-decoration: none; margin-left: 10px;">Вход / Регистрация</a>
+            </span>
             <button id="logout-btn" style="display:none; margin-left: 10px;">Выйти</button>
         </div>
     </nav>
@@ -158,12 +160,12 @@
             } catch (error) {
                 console.error('Ошибка загрузки сообщений:', error);
                 document.getElementById('admin-messages-container').innerHTML = `
-                        <div class="message-item admin-message">
-                            <div class="message-content">
-                                Ошибка загрузки сообщений: ${error.message}
+                            <div class="message-item admin-message">
+                                <div class="message-content">
+                                    Ошибка загрузки сообщений: ${error.message}
+                                </div>
                             </div>
-                        </div>
-                    `;
+                        `;
             }
         }
 
@@ -172,26 +174,26 @@
 
             if (messages.length === 0) {
                 container.innerHTML = `
-                        <div class="message-item admin-message">
-                            <div class="message-content">
-                                Нет новых сообщений от пользователей
+                            <div class="message-item admin-message">
+                                <div class="message-content">
+                                    Нет новых сообщений от пользователей
+                                </div>
                             </div>
-                        </div>
-                    `;
+                        `;
                 return;
             }
 
             container.innerHTML = messages.map(msg => `
-                    <div class="message-item admin-message">
-                        <div class="message-header">
-                            <div class="message-author">${msg.userName}</div>
-                            <div class="message-time">${new Date(msg.timestamp).toLocaleString('ru-RU')}</div>
+                        <div class="message-item admin-message">
+                            <div class="message-header">
+                                <div class="message-author">${msg.userName}</div>
+                                <div class="message-time">${new Date(msg.timestamp).toLocaleString('ru-RU')}</div>
+                            </div>
+                            <div class="message-content">
+                                <strong>Обращение:</strong> ${msg.text}
+                            </div>
                         </div>
-                        <div class="message-content">
-                            <strong>Обращение:</strong> ${msg.text}
-                        </div>
-                    </div>
-                `).join('');
+                    `).join('');
         }
 
         document.getElementById('send-message-btn')?.addEventListener('click', async () => {

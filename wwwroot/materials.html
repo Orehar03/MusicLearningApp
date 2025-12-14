@@ -23,18 +23,17 @@
 
         .video-container {
             margin: 15px 0;
-            position: relative;
-            padding-top: 56.25%; /* Соотношение 16:9 */
-            height: 0;
-            overflow: hidden;
+            /* Убираем старый стиль для контейнера */
+            /* position: relative;
+            padding-top: 56.25%; */
+            text-align: center; /* Центрируем видео */
         }
 
             .video-container video {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
+                /* Новые стили для видео */
+                max-width: 600px; /* Максимальная ширина */
+                width: 100%; /* Адаптивная ширина */
+                height: auto; /* Автоматическая высота для сохранения пропорций */
                 border: 1px solid #ccc;
                 background-color: #000;
             }
@@ -51,7 +50,9 @@
         <a href="/homework">Домашнее задание</a>
         <a href="/consultation">Онлайн-консультация</a>
         <div id="auth-buttons">
-            <a href="/auth.html" style="color: white; text-decoration: none; margin-left: 10px;">Вход / Регистрация</a>
+            <span id="login-link-container">
+                <a href="/auth.html" style="color: white; text-decoration: none; margin-left: 10px;">Вход / Регистрация</a>
+            </span>
             <button id="logout-btn" style="display:none; margin-left: 10px;">Выйти</button>
         </div>
     </nav>
@@ -63,7 +64,8 @@
             <p>Текст с описанием первого урока.</p>
             <div class="video-container">
                 <video controls>
-                    <source src="/videos/lesson1.mp4" type="video/mp4">
+                    <!-- Добавлен параметр ?v=2 для сброса кэша -->
+                    <source src="/videos/lesson1.mp4?v=2" type="video/mp4">
                     Ваш браузер не поддерживает видео.
                 </video>
             </div>
@@ -75,7 +77,8 @@
             <p>Текст с описанием второго урока.</p>
             <div class="video-container">
                 <video controls>
-                    <source src="/videos/lesson2.mp4" type="video/mp4">
+                    <!-- Добавлен параметр ?v=2 для сброса кэша -->
+                    <source src="/videos/lesson2.mp4?v=2" type="video/mp4">
                     Ваш браузер не поддерживает видео.
                 </video>
             </div>
