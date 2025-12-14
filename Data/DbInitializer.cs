@@ -14,25 +14,33 @@ public class DbInitializer
 
     public void Initialize()
     {
-        // Удаляем и создаём заново
-        _context.Database.EnsureDeleted();
+        // Убедимся, что база данных создана, но НЕ удаляем ее
+        // _context.Database.EnsureDeleted(); // <-- ЭТА СТРОКА БЫЛА ПРОБЛЕМОЙ
         _context.Database.EnsureCreated();
 
-        // Создаём админа с правильным хешем
-        var admin = new User
+        // Создаём админа, только если его еще нет в БД
+        if (!_context.Users.Any(u => u.Email == "admin@admin.com"))
         {
-            Email = "admin@admin.com",
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin", workFactor: 11), // ✅ Генерируем заново
-            Name = "Администратор",
-            Gender = "Other",
-            BirthDate = new DateTime(1990, 1, 1),
-            Role = "Admin"
-        };
-        _context.Users.Add(admin);
-        _context.SaveChanges();
-        Console.WriteLine($"✅ Админ создан с хешем: {admin.PasswordHash}");
+            Console.WriteLine("Админ не найден, создаем нового...");
+            var admin = new User
+            {
+                Email = "admin@admin.com",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin", workFactor: 11),
+                Name = "Администратор",
+                Gender = "Other",
+                BirthDate = new DateTime(1990, 1, 1),
+                Role = "Admin"
+            };
+            _context.Users.Add(admin);
+            _context.SaveChanges();
+            Console.WriteLine($"Админ создан с ID: {admin.Id}");
+        }
+        else
+        {
+            Console.WriteLine("Админ уже существует в базе данных.");
+        }
 
-        // Создаём тестовые данные
+        // Создаём тестовые данные, если их нет
         SeedTestData();
     }
 
@@ -52,11 +60,12 @@ public class DbInitializer
             var nextMonday = DateTime.Now.AddDays(7 - (int)DateTime.Now.DayOfWeek);
             var deadline = new DateTime(nextMonday.Year, nextMonday.Month, nextMonday.Day, 23, 59, 59);
 
-            _context.Homeworks.Add(new Models.Homework
-            {
-                Description = "Напишите названия нот в порядке возрастания",
-                Deadline = deadline
-            });
+            _context.Homeworks.Add(
+                new Models.Homework
+                {
+                    Description = "Напишите названия нот в порядке возрастания",
+                    Deadline = deadline
+                });
             _context.SaveChanges();
         }
     }

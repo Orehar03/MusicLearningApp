@@ -7,7 +7,7 @@
     const isAuthPage = window.location.pathname.endsWith('auth.html');
     const isHomePage = window.location.pathname === '/' || window.location.pathname.endsWith('index.html');
 
-    // --- НОВЫЙ КОНТРОЛЬ ДОСТУПА ---
+    // --- КОНТРОЛЬ ДОСТУПА ---
     // Если токена нет, и мы не на главной и не на странице входа - перенаправляем на вход
     if (!token && !isAuthPage && !isHomePage) {
         console.log('site.js: Доступ запрещен. Перенаправляем на страницу входа.');
@@ -15,7 +15,7 @@
         return; // Прерываем выполнение скрипта
     }
 
-    // 2. Обновляем кнопки на всех страницах
+    // 2. Обновляем кнопки на ВСЕХ страницах
     updateAuthButtons(token);
 
     // 3. Загружаем контент для остальных страниц, если токен есть
@@ -41,8 +41,7 @@ function updateAuthButtons(token) {
         console.log(`site.js: Кнопки авторизации обновлены. Токен: ${token ? 'есть' : 'нету'}.`);
     } else {
         // Если элементы не найдены на странице, выводим ошибку в консоль для отладки
-        if (!logoutBtn) console.error("site.js: Элемент с id='logout-btn' не найден.");
-        if (!loginLinkContainer) console.error("site.js: Элемент с id='login-link-container' не найден.");
+        console.error("site.js: Не удалось найти элементы кнопок авторизации на странице.");
     }
 }
 
@@ -82,12 +81,12 @@ function loadPageContent() {
     const path = window.location.pathname;
     console.log(`site.js: Загрузка контента для страницы: ${path}`);
 
-    // Функция loadLessons теперь находится в materials.html, поэтому здесь ее не вызываем
     if (path.includes('homework') && document.getElementById('homework-container')) {
         loadHomeworks();
     } else if (path.includes('consultation')) {
         // Контент для консультации загружается своим скриптом на странице
     }
+    // Функция loadLessons теперь находится в materials.html
 }
 
 // === ФУНКЦИЯ ЗАГРУЗКИ ДОМАШНИХ ЗАДАНИЙ (без изменений) ===
@@ -109,7 +108,6 @@ async function loadHomeworks() {
             return;
         }
 
-        // ... остальная часть функции loadHomeworks без изменений ...
         container.innerHTML = homeworks.map(hw => {
             const deadline = new Date(hw.deadline);
             const now = new Date();
