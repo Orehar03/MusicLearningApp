@@ -84,13 +84,14 @@
     </div>
     <script src="/js/site.js"></script>
     <script>
-        // Функция для обновления таймера
+        // Функция для обновления таймера с исправленной логикой
         function updateDeadline() {
             const now = new Date();
             const currentDay = now.getDay(); // 0 - Вс, 1 - Пн, ..., 6 - Сб
-            const daysUntilSunday = (7 - currentDay) % 7 || 7; // Если сегодня воскресенье, получаем 7 (следующее воскресенье)
 
+            // Вычисляем дату ближайшего воскресенья
             const deadline = new Date(now);
+            const daysUntilSunday = (7 - currentDay) % 7; // Если сегодня Вс (0), будет 0. Если Пн (1), будет 6.
             deadline.setDate(now.getDate() + daysUntilSunday);
             deadline.setHours(23, 59, 59, 999); // Устанавливаем время на 23:59:59
 

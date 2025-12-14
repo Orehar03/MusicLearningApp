@@ -1,28 +1,24 @@
 ﻿document.addEventListener('DOMContentLoaded', () => {
     console.log('site.js: Страница загружена, начинаю инициализацию...');
 
-    // 1. Проверяем сессию сразу
     const token = localStorage.getItem('authToken');
     console.log('site.js: Токен из localStorage:', token ? 'найден' : 'не найден');
 
     const isAuthPage = window.location.pathname.endsWith('auth.html');
+    const isHomePage = window.location.pathname === '/' || window.location.pathname.endsWith('index.html');
 
-    if (!token && !isAuthPage) {
-        console.log('site.js: Пользователь не авторизован, перенаправляем на страницу входа.');
+    // --- НОВЫЙ КОНТРОЛЬ ДОСТУПА ---
+    // Если токена нет, и мы не на главной и не на странице входа - перенаправляем на вход
+    if (!token && !isAuthPage && !isHomePage) {
+        console.log('site.js: Доступ запрещен. Перенаправляем на страницу входа.');
         window.location.href = '/auth.html';
         return; // Прерываем выполнение скрипта
     }
 
-    // 2. Обновляем кнопки
+    // 2. Обновляем кнопки на всех страницах
     updateAuthButtons(token);
 
-    // 3. Если мы на главной странице, но токен есть, ничего больше не делаем
-    if (window.location.pathname === '/' && token) {
-        console.log('site.js: На главной странице с токеном, всё в порядке.');
-        return;
-    }
-
-    // 4. Загружаем контент для остальных страниц, если токен есть
+    // 3. Загружаем контент для остальных страниц, если токен есть
     if (token) {
         loadPageContent();
     }
@@ -34,15 +30,19 @@ function updateAuthButtons(token) {
 
     if (logoutBtn && loginLinkContainer) {
         if (token) {
-            // Пользователь авторизован
+            // Пользователь авторизован: показываем "Выйти", скрываем "Вход"
             logoutBtn.style.display = 'inline-block';
             loginLinkContainer.style.display = 'none';
         } else {
-            // Пользователь не авторизован
+            // Пользователь не авторизован: показываем "Вход", скрываем "Выйти"
             logoutBtn.style.display = 'none';
             loginLinkContainer.style.display = 'inline';
         }
         console.log(`site.js: Кнопки авторизации обновлены. Токен: ${token ? 'есть' : 'нету'}.`);
+    } else {
+        // Если элементы не найдены на странице, выводим ошибку в консоль для отладки
+        if (!logoutBtn) console.error("site.js: Элемент с id='logout-btn' не найден.");
+        if (!loginLinkContainer) console.error("site.js: Элемент с id='login-link-container' не найден.");
     }
 }
 
@@ -66,8 +66,9 @@ async function apiRequest(url, options = {}) {
         if (response.status === 401) {
             console.log('site.js: 401 Unauthorized - сессия истекла, удаляю токен.');
             localStorage.removeItem('authToken');
-            window.location.href = '/auth.html'; // Сразу редиректим
-            return Promise.reject("Unauthorized"); // Отклоняем промис, чтобы не продолжать .then()
+            // Если получили 401, перенаправляем на страницу входа
+            window.location.href = '/auth.html';
+            return Promise.reject("Unauthorized");
         }
 
         return response;
@@ -81,54 +82,15 @@ function loadPageContent() {
     const path = window.location.pathname;
     console.log(`site.js: Загрузка контента для страницы: ${path}`);
 
-    // Убедимся, что контейнеры существуют, перед тем как загружать данные
-    if (path.includes('materials') && document.getElementById('lessons-container')) {
-        loadLessons();
-    } else if (path.includes('homework') && document.getElementById('homework-container')) {
+    // Функция loadLessons теперь находится в materials.html, поэтому здесь ее не вызываем
+    if (path.includes('homework') && document.getElementById('homework-container')) {
         loadHomeworks();
     } else if (path.includes('consultation')) {
         // Контент для консультации загружается своим скриптом на странице
     }
 }
 
-// === ФУНКЦИИ ЗАГРУЗКИ КОНТЕНТА (без изменений) ===
-
-async function loadLessons() {
-    try {
-        console.log('site.js: Загрузка уроков...');
-        const response = await apiRequest('/api/lessons');
-
-        if (!response.ok) {
-            throw new Error('Ошибка загрузки уроков');
-        }
-
-        const lessons = await response.json();
-        const container = document.getElementById('lessons-container');
-
-        if (!container) {
-            console.error('site.js: Контейнер для уроков не найден');
-            return;
-        }
-
-        container.innerHTML = lessons.map(lesson => `
-            <div class="lesson-item">
-                <h2>${lesson.title}</h2>
-                <p>${lesson.description}</p>
-                <div class="video-container">
-                    <video controls>
-                        <source src="${lesson.videoPath}" type="video/mp4">
-                        Ваш браузер не поддерживает видео
-                    </video>
-                </div>
-            </div>
-        `).join('');
-
-        console.log('site.js: Уроки успешно загружены');
-    } catch (error) {
-        console.error('site.js: Ошибка загрузки уроков:', error);
-        // Не будем показывать alert, чтобы не мешать
-    }
-}
+// === ФУНКЦИЯ ЗАГРУЗКИ ДОМАШНИХ ЗАДАНИЙ (без изменений) ===
 
 async function loadHomeworks() {
     try {
@@ -147,6 +109,7 @@ async function loadHomeworks() {
             return;
         }
 
+        // ... остальная часть функции loadHomeworks без изменений ...
         container.innerHTML = homeworks.map(hw => {
             const deadline = new Date(hw.deadline);
             const now = new Date();
@@ -214,6 +177,7 @@ async function submitHomework(homeworkId) {
 
 // === ОБРАБОТКА ВЫХОДА ===
 
+// Вешаем обработчик на кнопку, если она есть на странице
 document.getElementById('logout-btn')?.addEventListener('click', () => {
     console.log('site.js: Попытка выхода');
     localStorage.removeItem('authToken');

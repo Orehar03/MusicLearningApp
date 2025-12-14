@@ -23,14 +23,10 @@
 
         .video-container {
             margin: 15px 0;
-            /* Убираем старый стиль для контейнера */
-            /* position: relative;
-            padding-top: 56.25%; */
             text-align: center; /* Центрируем видео */
         }
 
             .video-container video {
-                /* Новые стили для видео */
                 max-width: 600px; /* Максимальная ширина */
                 width: 100%; /* Адаптивная ширина */
                 height: auto; /* Автоматическая высота для сохранения пропорций */
@@ -58,33 +54,58 @@
     </nav>
     <div id="content">
         <h1>Обучающие материалы</h1>
-
-        <div class="lesson-item">
-            <div class="lesson-title">Урок №1</div>
-            <p>Текст с описанием первого урока.</p>
-            <div class="video-container">
-                <video controls>
-                    <!-- Добавлен параметр ?v=2 для сброса кэша -->
-                    <source src="/videos/lesson1.mp4?v=2" type="video/mp4">
-                    Ваш браузер не поддерживает видео.
-                </video>
-            </div>
-            <div class="video-description">Длительность: 7:43</div>
-        </div>
-
-        <div class="lesson-item">
-            <div class="lesson-title">Урок №2</div>
-            <p>Текст с описанием второго урока.</p>
-            <div class="video-container">
-                <video controls>
-                    <!-- Добавлен параметр ?v=2 для сброса кэша -->
-                    <source src="/videos/lesson2.mp4?v=2" type="video/mp4">
-                    Ваш браузер не поддерживает видео.
-                </video>
-            </div>
-            <div class="video-description">Длительность: 11:09</div>
+        <div id="lessons-container">
+            <p>Загрузка уроков...</p>
         </div>
     </div>
     <script src="/js/site.js"></script>
+    <script>
+        // Эта функция теперь загружает уроки и вставляет их на страницу
+        async function loadAndRenderLessons() {
+            try {
+                console.log('materials.html: Начинаю загрузку уроков...');
+                const response = await apiRequest('/api/lessons');
+
+                if (!response.ok) {
+                    throw new Error('Ошибка загрузки уроков');
+                }
+
+                const lessons = await response.json();
+                const container = document.getElementById('lessons-container');
+
+                if (!container) {
+                    console.error('materials.html: Контейнер для уроков не найден');
+                    return;
+                }
+
+                container.innerHTML = lessons.map(lesson => `
+                        <div class="lesson-item">
+                            <h2>${lesson.title}</h2>
+                            <p>${lesson.description}</p>
+                            <div class="video-container">
+                                <video controls preload="metadata">
+                                    <source src="${lesson.videoPath}" type="video/mp4">
+                                    Ваш браузер не поддерживает видео.
+                                </video>
+                            </div>
+                        </div>
+                    `).join('');
+
+                console.log('materials.html: Уроки успешно загружены и отрисованы');
+            } catch (error) {
+                console.error('materials.html: Ошибка загрузки уроков:', error);
+                const container = document.getElementById('lessons-container');
+                if (container) {
+                    container.innerHTML = `<p style="color: red;">Не удалось загрузить уроки. Пожалуйста, попробуйте обновить страницу.</p>`;
+                }
+            }
+        }
+
+        // Запускаем загрузку уроков после того, как основная логика site.js отработает
+        document.addEventListener('DOMContentLoaded', () => {
+            // Небольшая задержка, чтобы site.js успел проверить авторизацию
+            setTimeout(loadAndRenderLessons, 100);
+        });
+    </script>
 </body>
 </html>
