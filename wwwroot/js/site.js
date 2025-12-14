@@ -1,4 +1,4 @@
-﻿// 🔥 ЧИТАЕМ ТОКЕН ИЗ localStorage СРАЗУ ПРИ ЗАГРУЗКЕ СКРИПТА
+﻿// ЧИТАЕМ ТОКЕН ИЗ localStorage СРАЗУ ПРИ ЗАГРУЗКЕ СКРИПТА
 let authToken = localStorage.getItem('authToken') || null;
 console.log('🔑 Токен при инициализации скрипта:', authToken ? 'найден' : 'не найден');
 
@@ -6,11 +6,12 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('Страница мониторинга загружена');
     updateAuthButtons();
 
-    // 🔥 ПРОВЕРЯЕМ СЕССИЮ ТОЛЬКО ПОСЛЕ ПОЛНОЙ ЗАГРУЗКИ DOM
+    // ПРОВЕРЯЕМ СЕССИЮ ТОЛЬКО ПОСЛЕ ПОЛНОЙ ЗАГРУЗКИ DOM
+    // Увеличиваем задержку перед проверкой сессии
     setTimeout(() => {
         checkSession();
         loadPageContent();
-    }, 100);
+    }, 500);
 });
 
 function checkSession() {
@@ -47,18 +48,15 @@ function handleUnauthorized() {
         return;
     }
 
-    // Показываем предупреждение с задержкой
-    setTimeout(() => {
-        alert('Сессия истекла или отсутствует. Пожалуйста, войдите снова.');
-        window.location.href = '/auth.html';
-    }, 300);
+    // Убираем alert и сразу перенаправляем
+    window.location.href = '/auth.html';
 }
 
 function updateAuthButtons() {
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
         logoutBtn.style.display = authToken ? 'inline-block' : 'none';
-        console.log(`Кнопка выхода: ${authToken ? 'видна' : 'скрыта'}`);
+        console.log(`Кнопка выхода: ${authToken ? 'видима' : 'скрыта'}`);
     }
 }
 
@@ -121,7 +119,7 @@ async function loadLessons() {
         const container = document.getElementById('lessons-container');
 
         if (!container) {
-            console.error('❌ Контейнер для уроков не найден');
+            console.error('Контейнер для уроков не найден');
             return;
         }
 
@@ -147,7 +145,7 @@ async function loadLessons() {
 
 async function loadHomeworks() {
     try {
-        console.log('📝 Загрузка домашних заданий...');
+        console.log('Загрузка домашних заданий...');
         const response = await apiRequest('/api/homeworks');
 
         if (!response.ok) {
@@ -199,7 +197,7 @@ async function loadHomeworks() {
 
         console.log('Домашние задания успешно загружены');
     } catch (error) {
-        console.error('❌ Ошибка загрузки заданий:', error);
+        console.error('Ошибка загрузки заданий:', error);
         alert('Не удалось загрузить задания. Попробуйте обновить страницу.');
     }
 }
@@ -219,11 +217,11 @@ async function submitHomework(homeworkId) {
             statusElement.textContent = 'Отправлено!';
             statusElement.style.color = 'green';
         } else {
-            statusElement.textContent = result.error || '❌ Ошибка отправки';
+            statusElement.textContent = result.error || 'Ошибка отправки';
             statusElement.style.color = 'red';
         }
     } catch (error) {
-        statusElement.textContent = '❌ Ошибка подключения';
+        statusElement.textContent = 'Ошибка подключения';
         statusElement.style.color = 'red';
     }
 }
@@ -231,7 +229,7 @@ async function submitHomework(homeworkId) {
 // === ОБРАБОТКА ВЫХОДА ===
 
 document.getElementById('logout-btn')?.addEventListener('click', () => {
-    console.log('🚪 Попытка выхода');
+    console.log('Попытка выхода');
 
     localStorage.removeItem('authToken');
     authToken = null;

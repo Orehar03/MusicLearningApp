@@ -16,11 +16,13 @@ public class AuthController : ControllerBase
 {
     private readonly AuthService _authService;
     private readonly ApplicationDbContext _context;
+    private readonly ILogger<AuthController> _logger;
 
-    public AuthController(AuthService authService, ApplicationDbContext context)
+    public AuthController(AuthService authService, ApplicationDbContext context, ILogger<AuthController> logger)
     {
         _authService = authService;
         _context = context;
+        _logger = logger;
     }
 
     [HttpPost("register")]
@@ -53,7 +55,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Ошибка регистрации: {ex.Message}");
+            _logger.LogError($"Ошибка регистрации: {ex.Message}");
             return StatusCode(500, new { error = "Внутренняя ошибка сервера" });
         }
     }
@@ -70,21 +72,37 @@ public class AuthController : ControllerBase
             if (token == null)
                 return Unauthorized(new { error = "Неверные данные" });
 
+            // Добавляем логирование для отладки
+            _logger.LogInformation($"Пользователь {model.Email} успешно авторизовался");
+
             return Ok(new { Token = token });
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Ошибка входа: {ex.Message}");
+            _logger.LogError($"Ошибка входа: {ex.Message}");
             return StatusCode(500, new { error = "Внутренняя ошибка сервера" });
         }
     }
+
     [HttpGet("me")]
     [Authorize]
     public IActionResult GetCurrentUser()
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var role = User.FindFirst(ClaimTypes.Role)?.Value;
-        return Ok(new { userId, role });
+        try
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            // Добавляем логирование для отладки
+            _logger.LogInformation($"Запрос данных текущего пользователя: ID={userId}, Role={role}");
+
+            return Ok(new { userId, role });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Ошибка получения данных пользователя: {ex.Message}");
+            return StatusCode(500, new { error = "Внутренняя ошибка сервера" });
+        }
     }
 }
 
