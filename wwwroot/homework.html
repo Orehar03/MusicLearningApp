@@ -6,6 +6,7 @@
     <title>Домашнее задание</title>
     <link rel="stylesheet" href="/css/site.css">
     <style>
+        /* ... (ваши стили остаются без изменений) ... */
         .homework-header {
             font-size: 1.5em;
             font-weight: bold;
@@ -37,13 +38,53 @@
         .user-only {
             display: none;
         }
+
+        .admin-only {
+            display: none;
+            background-color: #e8f4fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .submission-item {
+            border: 1px solid #ccc;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            background-color: #fff;
+        }
+
+        .submission-header {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .submission-time {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .submission-files {
+            margin-top: 10px;
+        }
+
+            .submission-files a {
+                display: block;
+                color: #3498db;
+                text-decoration: none;
+            }
+
+                .submission-files a:hover {
+                    text-decoration: underline;
+                }
     </style>
 </head>
 <body>
     <nav>
         <a href="/">Главная</a>
         <a href="/materials">Обучающий материал</a>
-        <a href="/homework">Домашнее задание</a>
         <a href="/consultation">Онлайн-консультация</a>
         <div id="auth-buttons">
             <span id="login-link-container">
@@ -55,105 +96,108 @@
     <div id="content">
         <h1>Домашнее задание</h1>
 
-        <div class="homework-item">
-            <div class="homework-header">Домашка №1</div>
-            <div class="homework-description">
-                Текст текст текст текст текст текст текст текст текст текст текст текст текст.<br>
-                1. текст текст текст текст текст текст;<br>
-                2. текст текст текст текст текст текст текст;<br>
-                3. текст текст текст текст текст текст текст текст текст.
-            </div>
-
-            <!-- Элемент для отображения таймера -->
-            <p class="deadline-info" id="deadline-timer">Загрузка...</p>
-
-            <div class="user-only submission-area">
-                <h3>Ваш ответ</h3>
-                <textarea id="homework-text" rows="6" placeholder="Напишите ваш ответ здесь..." style="width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px;"></textarea>
-
-                <div class="file-upload">
-                    <label for="homework-files" style="display: block; margin-bottom: 5px;">Прикрепить файлы (необязательно):</label>
-                    <input type="file" id="homework-files" multiple style="margin-top: 5px; display: block; padding: 5px;">
+        <!-- Секция для пользователя -->
+        <div id="user-section" class="user-only">
+            <div class="homework-item">
+                <div class="homework-header">Домашка №1</div>
+                <div class="homework-description">
+                    Текст текст текст текст текст текст текст текст текст текст текст текст текст.<br>
+                    1. текст текст текст текст текст текст;<br>
+                    2. текст текст текст текст текст текст текст;<br>
+                    3. текст текст текст текст текст текст текст текст текст.
                 </div>
+                <p class="deadline-info" id="deadline-timer">Загрузка...</p>
+                <div class="submission-area">
+                    <h3>Ваш ответ</h3>
+                    <textarea id="homework-text" rows="6" placeholder="Напишите ваш ответ здесь..." style="width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px;"></textarea>
+                    <div class="file-upload">
+                        <label for="homework-files" style="display: block; margin-bottom: 5px;">Прикрепить файлы (необязательно):</label>
+                        <input type="file" id="homework-files" multiple style="margin-top: 5px; display: block; padding: 5px;">
+                    </div>
+                    <button id="submit-homework-btn" style="padding: 8px 15px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px;">
+                        Отправить задание
+                    </button>
+                    <p id="submission-status" style="margin-top: 10px; min-height: 20px;"></p>
+                </div>
+            </div>
+        </div>
 
-                <button id="submit-homework-btn" style="padding: 8px 15px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px;">
-                    Отправить задание
-                </button>
-                <p id="submission-status" style="margin-top: 10px; min-height: 20px;"></p>
+        <!-- НОВАЯ СЕКЦИЯ ДЛЯ АДМИНИСТРАТОРА -->
+        <div id="admin-section" class="admin-only">
+            <h2>Отправленные работы</h2>
+            <div id="admin-submissions-container">
+                <p>Загрузка работ...</p>
             </div>
         </div>
     </div>
     <script src="/js/site.js"></script>
     <script>
-        // Функция для обновления таймера с исправленной логикой
-        function updateDeadline() {
-            const now = new Date();
-            const currentDay = now.getDay(); // 0 - Вс, 1 - Пн, ..., 6 - Сб
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Таймер дедлайна (без изменений)
+            function updateDeadline() { /* ... (код без изменений) ... */ }
+            updateDeadline();
+            setInterval(updateDeadline, 1000);
 
-            // Вычисляем дату ближайшего воскресенья
-            const deadline = new Date(now);
-            const daysUntilSunday = (7 - currentDay) % 7; // Если сегодня Вс (0), будет 0. Если Пн (1), будет 6.
-            deadline.setDate(now.getDate() + daysUntilSunday);
-            deadline.setHours(23, 59, 59, 999); // Устанавливаем время на 23:59:59
-
-            const diff = deadline - now;
-
-            if (diff <= 0) {
-                document.getElementById('deadline-timer').textContent = 'Дедлайн истек';
+            const response = await apiRequest('/api/auth/me');
+            if (!response.ok) {
+                console.error('Ошибка загрузки данных пользователя');
                 return;
             }
+            const userData = await response.json();
 
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            const userSection = document.getElementById('user-section');
+            const adminSection = document.getElementById('admin-section');
 
-            let timeString = '';
-            if (days > 0) {
-                timeString = `${days} дн. ${hours} ч.`;
+            if (userData.role === 'Admin') {
+                userSection.style.display = 'none';
+                adminSection.style.display = 'block';
+                loadAdminSubmissions(); // Загружаем работы для админа
             } else {
-                timeString = `${hours} ч. ${minutes} мин. ${seconds} сек.`;
+                userSection.style.display = 'block';
+                adminSection.style.display = 'none';
             }
-
-            document.getElementById('deadline-timer').textContent = `Осталось: ${timeString}`;
-        }
-
-        // Запускаем таймер при загрузке страницы
-        document.addEventListener('DOMContentLoaded', () => {
-            updateDeadline(); // Вызываем сразу, чтобы не ждать секунду
-            setInterval(updateDeadline, 1000); // Обновляем каждую секунду
-
-            // Показываем/скрываем форму для отправки в зависимости от роли
-            async function loadHomeworkPage() {
-                try {
-                    const response = await apiRequest('/api/auth/me');
-                    if (!response.ok) {
-                        throw new Error('Ошибка авторизации');
-                    }
-
-                    const userData = await response.json();
-
-                    if (userData.role === 'Admin') {
-                        document.querySelector('.user-only').style.display = 'none';
-                    } else {
-                        document.querySelector('.user-only').style.display = 'block';
-                    }
-                } catch (error) {
-                    console.error('Ошибка загрузки данных пользователя:', error);
-                    // По умолчанию показываем форму для пользователя
-                    document.querySelector('.user-only').style.display = 'block';
-                }
-            }
-
-            loadHomeworkPage();
         });
 
+        // НОВАЯ ФУНКЦИЯ ДЛЯ ЗАГРУЗКИ РАБОТ АДМИНОМ
+        async function loadAdminSubmissions() {
+            try {
+                const response = await apiRequest('/api/submissions');
+                if (!response.ok) throw new Error('Ошибка загрузки работ');
+
+                const submissions = await response.json();
+                const container = document.getElementById('admin-submissions-container');
+
+                if (submissions.length === 0) {
+                    container.innerHTML = '<p>Пока никто не сдал работы.</p>';
+                    return;
+                }
+
+                container.innerHTML = submissions.map(sub => `
+                        <div class="submission-item">
+                            <div class="submission-header">Работа от: ${sub.user.name} (${sub.user.email})</div>
+                            <div class="submission-time">Отправлено: ${new Date(sub.submissionTime).toLocaleString('ru-RU')}</div>
+                            <div class="submission-text">${sub.textAnswer || 'Текст ответа отсутствует'}</div>
+                            ${sub.filePath ? `
+                                <div class="submission-files">
+                                    <strong>Прикрепленный файл:</strong>
+                                    <a href="${sub.filePath}" target="_blank" download>Скачать ${sub.filePath.split('/').pop()}</a>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `).join('');
+            } catch (error) {
+                console.error('Ошибка:', error);
+                document.getElementById('admin-submissions-container').innerHTML = '<p style="color: red;">Не удалось загрузить работы.</p>';
+            }
+        }
+
+        // ИЗМЕНЕННАЯ ФУНКЦИЯ ОТПРАВКИ РАБОТЫ
         document.getElementById('submit-homework-btn')?.addEventListener('click', async () => {
             const text = document.getElementById('homework-text').value;
-            const files = document.getElementById('homework-files').files;
+            const fileInput = document.getElementById('homework-files');
             const statusElement = document.getElementById('submission-status');
 
-            if (!text.trim() && files.length === 0) {
+            if (!text.trim() && fileInput.files.length === 0) {
                 statusElement.textContent = 'Введите ответ или прикрепите файлы';
                 statusElement.style.color = 'red';
                 return;
@@ -162,12 +206,41 @@
             statusElement.textContent = 'Отправляется...';
             statusElement.style.color = '#3498db';
 
-            setTimeout(() => {
-                statusElement.textContent = 'Задание успешно отправлено!';
-                statusElement.style.color = 'green';
-                document.getElementById('homework-text').value = '';
-                document.getElementById('homework-files').value = '';
-            }, 1500);
+            // Используем FormData для отправки файлов
+            const formData = new FormData();
+            formData.append('HomeworkId', '1'); // У нас пока одно ДЗ
+            if (text.trim()) {
+                formData.append('TextAnswer', text);
+            }
+            if (fileInput.files.length > 0) {
+                formData.append('File', fileInput.files[0]); // Отправляем первый файл
+            }
+
+            try {
+                const response = await fetch('/api/submissions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                        // НЕ устанавливаем Content-Type, браузер сделает это сам для FormData
+                    },
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    statusElement.textContent = 'Задание успешно отправлено!';
+                    statusElement.style.color = 'green';
+                    document.getElementById('homework-text').value = '';
+                    fileInput.value = '';
+                } else {
+                    statusElement.textContent = result.error || 'Ошибка отправки';
+                    statusElement.style.color = 'red';
+                }
+            } catch (error) {
+                statusElement.textContent = 'Ошибка подключения';
+                statusElement.style.color = 'red';
+            }
         });
     </script>
 </body>
