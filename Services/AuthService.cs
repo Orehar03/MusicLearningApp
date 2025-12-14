@@ -26,13 +26,13 @@ public class AuthService
             var user = _context.Users.FirstOrDefault(u => u.Email == email);
             if (user == null)
             {
-                Console.WriteLine($"❌ Пользователь не найден: {email}");
+                Console.WriteLine($"Пользователь не найден: {email}");
                 return null;
             }
 
             if (string.IsNullOrEmpty(user.PasswordHash))
             {
-                Console.WriteLine($"⚠️ Пустой хеш для: {email}");
+                Console.WriteLine($"Пустой хеш для: {email}");
                 return null;
             }
 
@@ -44,13 +44,13 @@ public class AuthService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"🔥 Ошибка верификации пароля: {ex.Message}");
+                Console.WriteLine($"Ошибка верификации пароля: {ex.Message}");
                 return null;
             }
 
             if (!passwordVerified)
             {
-                Console.WriteLine($"❌ Неверный пароль для: {email}");
+                Console.WriteLine($"Неверный пароль для: {email}");
                 return null;
             }
 
@@ -72,12 +72,12 @@ public class AuthService
             var token = tokenHandler.CreateToken(tokenDescriptor);
             var tokenString = tokenHandler.WriteToken(token);
 
-            Console.WriteLine($"✅ Токен создан для: {email}");
+            Console.WriteLine($"Токен создан для: {email}");
             return tokenString;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"🔥 Критическая ошибка в Authenticate: {ex.Message}");
+            Console.WriteLine($"Критическая ошибка в Authenticate: {ex.Message}");
             Console.WriteLine(ex.StackTrace);
             return null;
         }

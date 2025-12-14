@@ -1,143 +1,310 @@
-﻿<script>
-    // --- Функции для переключения форм (оставляем без изменений) ---
-    function showRegister() {
-        document.getElementById('login-form').style.display = 'none';
-        document.getElementById('register-form').style.display = 'block';
-        resetStatusMessages();
-    }
-    function showLogin() {
-        document.getElementById('register-form').style.display = 'none';
-        document.getElementById('login-form').style.display = 'block';
-        resetStatusMessages();
-    }
-    function resetStatusMessages() {
-        document.getElementById('login-status').style.display = 'none';
-        document.getElementById('login-status').textContent = '';
-        document.getElementById('register-status').style.display = 'none';
-        document.getElementById('register-status').textContent = '';
-    }
-    document.getElementById('reg-birthdate').addEventListener('input', function (e) {
-        let v = e.target.value.replace(/\D/g, '');
-        if (v.length >= 2) v = v.substring(0, 2) + '.' + v.substring(2);
-        if (v.length >= 5) v = v.substring(0, 5) + '.' + v.substring(5, 9);
-        e.target.value = v.substring(0, 10);
-    });
-
-    // --- НОВАЯ, МАКСИМАЛЬНО ПРОСТАЯ ФУНКЦИЯ ВХОДА ---
-    async function login() {
-        console.log("LOGIN: Функция login() вызвана");
-
-        const email = document.getElementById('login-email').value;
-        const password = document.getElementById('login-password').value;
-        const status = document.getElementById('login-status');
-
-        console.log("LOGIN: Email и пароль получены:", email);
-
-        if (!email || !password) {
-            console.log("LOGIN: Поля не заполнены");
-            status.textContent = 'Заполните все поля';
-            status.style.display = 'block';
-            return;
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Авторизация</title>
+    <link rel="stylesheet" href="/css/site.css">
+    <style>
+        .form-container {
+            max-width: 500px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
-        status.textContent = 'Попытка входа...';
-        status.style.display = 'block';
+        .form-group {
+            margin-bottom: 15px;
+        }
 
-        try {
-            console.log("LOGIN: Отправка запроса на сервер...");
-            const response = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
+            .form-group label {
+                display: block;
+                margin-bottom: 5px;
+                font-weight: bold;
+            }
 
-            console.log("LOGIN: Ответ от сервера получен. Статус:", response.status);
+            .form-group input, .form-group select {
+                width: 100%;
+                padding: 8px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                box-sizing: border-box;
+            }
 
-            const data = await response.json();
-            console.log("LOGIN: Данные ответа:", data);
+        .radio-group {
+            display: flex;
+            gap: 15px;
+        }
 
-            if (response.ok) {
-                console.log("LOGIN: Ответ успешный. Проверяю наличие токена...");
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
 
-                // Проверяем, есть ли токен в ответе
-                if (data && data.Token) {
-                    console.log("LOGIN: Токен найден. Пытаюсь сохранить в localStorage...");
-                    localStorage.setItem('authToken', data.Token);
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
 
-                    // Проверяем, сохранился ли он
-                    const savedToken = localStorage.getItem('authToken');
-                    if (savedToken) {
-                        console.log("LOGIN: Успех! Токен сохранён в localStorage:", savedToken);
-                        status.textContent = 'Вход успешен! Перенаправление...';
-                        window.location.href = '/';
-                    } else {
-                        console.error("LOGIN: ОШИБКА! Токен не сохранился в localStorage.");
-                        status.textContent = 'Ошибка: не удалось сохранить токен. Попробуйте ещё раз.';
-                    }
-                } else {
-                    console.error("LOGIN: ОШИБКА! В ответе сервера нет токена.");
-                    status.textContent = 'Ошибка: сервер не вернул токен.';
+            button:hover {
+                background: #2980b9;
+            }
+
+        .switch-form {
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        #login-status, #register-status {
+            margin-top: 10px;
+            min-height: 20px;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            display: none;
+        }
+
+        .status-success {
+            background-color: #d4edda;
+            color: #155724;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <div id="login-form">
+            <h2>Вход</h2>
+            <div class="form-group">
+                <label for="login-email">Email</label>
+                <input type="email" id="login-email" placeholder="Ваш email">
+            </div>
+            <div class="form-group">
+                <label for="login-password">Пароль</label>
+                <input type="password" id="login-password" placeholder="Ваш пароль">
+            </div>
+            <button onclick="login()">Войти</button>
+            <div class="switch-form">
+                <p>Нет аккаунта? <a href="#" onclick="showRegister()">Зарегистрироваться</a></p>
+            </div>
+            <p id="login-status" class="status-error"></p>
+        </div>
+
+        <div id="register-form" style="display:none;">
+            <h2>Регистрация</h2>
+            <div class="form-group">
+                <label for="reg-name">Имя</label>
+                <input type="text" id="reg-name" placeholder="Иван">
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="reg-email" placeholder="user@example.com">
+            </div>
+            <div class="form-group">
+                <label>Пароль</label>
+                <input type="password" id="reg-password" placeholder="Не менее 6 символов">
+            </div>
+            <div class="form-group">
+                <label>Пол</label>
+                <div class="radio-group">
+                    <div class="radio-item">
+                        <input type="radio" id="gender-male" name="gender" value="Male" checked>
+                        <label for="gender-male">Мужской</label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" id="gender-female" name="gender" value="Female">
+                        <label for="gender-female">Женский</label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" id="gender-other" name="gender" value="Other">
+                        <label for="gender-other">Другое</label>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Дата рождения</label>
+                <input type="text" id="reg-birthdate" placeholder="ДД.ММ.ГГГГ" maxlength="10">
+            </div>
+            <button onclick="register()">Зарегистрироваться</button>
+            <div class="switch-form">
+                <p>Уже есть аккаунт? <a href="#" onclick="showLogin()">Войти</a></p>
+            </div>
+            <p id="register-status" class="status-error"></p>
+        </div>
+    </div>
+
+    <script>
+        // Ждем, пока вся страница загрузится
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("auth.html: Страница загружена, инициализируем скрипты...");
+
+            // --- Функции для переключения форм ---
+            function showRegister() {
+                document.getElementById('login-form').style.display = 'none';
+                document.getElementById('register-form').style.display = 'block';
+                resetStatusMessages();
+            }
+
+            function showLogin() {
+                document.getElementById('register-form').style.display = 'none';
+                document.getElementById('login-form').style.display = 'block';
+                resetStatusMessages();
+            }
+
+            function resetStatusMessages() {
+                document.getElementById('login-status').style.display = 'none';
+                document.getElementById('login-status').textContent = '';
+                document.getElementById('register-status').style.display = 'none';
+                document.getElementById('register-status').textContent = '';
+            }
+
+            // Вешаем обработчик на поле ввода даты
+            const birthdateInput = document.getElementById('reg-birthdate');
+            if (birthdateInput) {
+                birthdateInput.addEventListener('input', function (e) {
+                    let v = e.target.value.replace(/\D/g, '');
+                    if (v.length >= 2) v = v.substring(0, 2) + '.' + v.substring(2);
+                    if (v.length >= 5) v = v.substring(0, 5) + '.' + v.substring(5, 9);
+                    e.target.value = v.substring(0, 10);
+                });
+            } else {
+                console.error("auth.html: Элемент с id='reg-birthdate' не найден!");
+            }
+
+            // --- Функция входа (без изменений, т.к. она была рабочей) ---
+            async function login() {
+                console.log("LOGIN: Функция login() вызвана");
+
+                const email = document.getElementById('login-email').value;
+                const password = document.getElementById('login-password').value;
+                const status = document.getElementById('login-status');
+
+                console.log("LOGIN: Email и пароль получены:", email);
+
+                if (!email || !password) {
+                    console.log("LOGIN: Поля не заполнены");
+                    status.textContent = 'Заполните все поля';
+                    status.style.display = 'block';
+                    return;
                 }
-            } else {
-                console.error("LOGIN: Ошибка входа. Сервер вернул:", data);
-                status.textContent = data.error || 'Неверные данные';
+
+                status.textContent = 'Попытка входа...';
+                status.style.display = 'block';
+
+                try {
+                    console.log("LOGIN: Отправка запроса на сервер...");
+                    const response = await fetch('/api/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+
+                    console.log("LOGIN: Ответ от сервера получен. Статус:", response.status);
+
+                    const data = await response.json();
+                    console.log("LOGIN: Данные ответа:", data);
+
+                    if (response.ok) {
+                        console.log("LOGIN: Ответ успешный. Проверяю наличие токена...");
+
+                        if (data && data.Token) {
+                            console.log("LOGIN: Токен найден. Пытаюсь сохранить в localStorage...");
+                            localStorage.setItem('authToken', data.Token);
+
+                            const savedToken = localStorage.getItem('authToken');
+                            if (savedToken) {
+                                console.log("LOGIN: Успех! Токен сохранён в localStorage:", savedToken);
+                                status.textContent = 'Вход успешен! Перенаправление...';
+                                window.location.href = '/';
+                            } else {
+                                console.error("LOGIN: ОШИБКА! Токен не сохранился в localStorage.");
+                                status.textContent = 'Ошибка: не удалось сохранить токен. Попробуйте ещё раз.';
+                            }
+                        } else {
+                            console.error("LOGIN: ОШИБКА! В ответе сервера нет токена.");
+                            status.textContent = 'Ошибка: сервер не вернул токен.';
+                        }
+                    } else {
+                        console.error("LOGIN: Ошибка входа. Сервер вернул:", data);
+                        status.textContent = data.error || 'Неверные данные';
+                    }
+                } catch (error) {
+                    console.error("LOGIN: Произошла непредвиденная ошибка:", error);
+                    status.textContent = 'Ошибка подключения к серверу';
+                }
             }
-        } catch (error) {
-            console.error("LOGIN: Произошла непредвиденная ошибка:", error);
-            status.textContent = 'Ошибка подключения к серверу';
-        }
-    }
 
-    // ... функцию register можно пока оставить как есть или временно убрать ...
-    async function register() {
-        // ... (код функции register без изменений) ...
-        const name = document.getElementById('reg-name').value;
-        const email = document.getElementById('reg-email').value;
-        const password = document.getElementById('reg-password').value;
-        const gender = document.querySelector('input[name="gender"]:checked').value;
-        const birthDateStr = document.getElementById('reg-birthdate').value;
+            // Делаем функции login и register глобальными, чтобы их можно было вызвать из onclick
+            window.login = login;
+            window.register = register;
+            window.showRegister = showRegister;
+            window.showLogin = showLogin;
 
-        const status = document.getElementById('register-status');
-        resetStatusMessages();
+            // Функция register оставлена без изменений, но она тоже должна быть внутри DOMContentLoaded
+            async function register() {
+                const name = document.getElementById('reg-name').value;
+                const email = document.getElementById('reg-email').value;
+                const password = document.getElementById('reg-password').value;
+                const gender = document.querySelector('input[name="gender"]:checked').value;
+                const birthDateStr = document.getElementById('reg-birthdate').value;
 
-        if (!name || !email || !password || !birthDateStr) {
-            showStatus(status, 'Заполните все поля', 'error');
-            return;
-        }
+                const status = document.getElementById('register-status');
+                resetStatusMessages();
 
-        const parts = birthDateStr.split('.');
-        if (parts.length !== 3 || parts[0].length !== 2 || parts[1].length !== 2 || parts[2].length !== 4) {
-            showStatus(status, 'Формат даты: ДД.ММ.ГГГГ', 'error');
-            return;
-        }
+                if (!name || !email || !password || !birthDateStr) {
+                    showStatus(status, 'Заполните все поля', 'error');
+                    return;
+                }
 
-        const birthDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                const parts = birthDateStr.split('.');
+                if (parts.length !== 3 || parts[0].length !== 2 || parts[1].length !== 2 || parts[2].length !== 4) {
+                    showStatus(status, 'Формат даты: ДД.ММ.ГГГГ', 'error');
+                    return;
+                }
 
-        status.textContent = 'Регистрация...';
-        status.style.display = 'block';
-        status.className = 'status-error';
+                const birthDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
 
-        try {
-            const res = await fetch('/api/auth/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password, name, gender, birthDate })
-            });
-            const data = await res.json();
-            if (res.ok) {
-                showStatus(status, 'Регистрация успешна! Теперь войдите.', 'success');
-                setTimeout(showLogin, 1000);
-            } else {
-                showStatus(status, data.error || 'Ошибка регистрации', 'error');
+                status.textContent = 'Регистрация...';
+                status.style.display = 'block';
+                status.className = 'status-error';
+
+                try {
+                    const res = await fetch('/api/auth/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password, name, gender, birthDate })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        showStatus(status, 'Регистрация успешна! Теперь войдите.', 'success');
+                        setTimeout(showLogin, 1000);
+                    } else {
+                        showStatus(status, data.error || 'Ошибка регистрации', 'error');
+                    }
+                } catch (err) {
+                    showStatus(status, 'Ошибка подключения к серверу', 'error');
+                    console.error('Register error:', err);
+                }
             }
-        } catch (err) {
-            showStatus(status, 'Ошибка подключения к серверу', 'error');
-            console.error('Register error:', err);
-        }
-    }
-    function showStatus(element, message, type) {
-        element.textContent = message;
-        element.style.display = 'block';
-        element.className = type === 'success' ? 'status-success' : 'status-error';
-    }
-</script>
+
+            function showStatus(element, message, type) {
+                element.textContent = message;
+                element.style.display = 'block';
+                element.className = type === 'success' ? 'status-success' : 'status-error';
+            }
+        });
+    </script>
+</body>
+</html>
