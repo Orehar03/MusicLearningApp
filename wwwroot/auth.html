@@ -219,9 +219,13 @@
                     if (response.ok) {
                         console.log("LOGIN: Ответ успешный. Проверяю наличие токена...");
 
-                        if (data && data.Token) {
+                        // --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
+                        // Меняем data.Token на data.token
+                        if (data && data.token) {
                             console.log("LOGIN: Токен найден. Пытаюсь сохранить в localStorage...");
-                            localStorage.setItem('authToken', data.Token);
+                            // --- И ИСПРАВЛЕНИЕ ЗДЕСЬ ---
+                            // Меняем data.Token на data.token
+                            localStorage.setItem('authToken', data.token);
 
                             const savedToken = localStorage.getItem('authToken');
                             if (savedToken) {
