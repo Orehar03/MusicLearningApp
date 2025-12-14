@@ -45,16 +45,17 @@
         }
 
         button {
-            background: #333;
+            background: #3498db;
             color: white;
             border: none;
             padding: 10px 20px;
             border-radius: 4px;
             cursor: pointer;
+            font-size: 16px;
         }
 
             button:hover {
-                background: #555;
+                background: #2980b9;
             }
 
         .switch-form {
@@ -65,6 +66,20 @@
         #login-status, #register-status {
             margin-top: 10px;
             min-height: 20px;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            display: none;
+        }
+
+        .status-success {
+            background-color: #d4edda;
+            color: #155724;
+            display: none;
         }
     </style>
 </head>
@@ -84,7 +99,7 @@
             <div class="switch-form">
                 <p>Нет аккаунта? <a href="#" onclick="showRegister()">Зарегистрироваться</a></p>
             </div>
-            <p id="login-status" style="color: red;"></p>
+            <p id="login-status" class="status-error"></p>
         </div>
 
         <div id="register-form" style="display:none;">
@@ -126,7 +141,7 @@
             <div class="switch-form">
                 <p>Уже есть аккаунт? <a href="#" onclick="showLogin()">Войти</a></p>
             </div>
-            <p id="register-status" style="color: red;"></p>
+            <p id="register-status" class="status-error"></p>
         </div>
     </div>
 
@@ -134,10 +149,20 @@
         function showRegister() {
             document.getElementById('login-form').style.display = 'none';
             document.getElementById('register-form').style.display = 'block';
+            resetStatusMessages();
         }
+
         function showLogin() {
             document.getElementById('register-form').style.display = 'none';
             document.getElementById('login-form').style.display = 'block';
+            resetStatusMessages();
+        }
+
+        function resetStatusMessages() {
+            document.getElementById('login-status').style.display = 'none';
+            document.getElementById('login-status').textContent = '';
+            document.getElementById('register-status').style.display = 'none';
+            document.getElementById('register-status').textContent = '';
         }
 
         document.getElementById('reg-birthdate').addEventListener('input', function (e) {
@@ -151,12 +176,17 @@
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
             const status = document.getElementById('login-status');
-            status.textContent = '';
+
+            resetStatusMessages();
 
             if (!email || !password) {
-                status.textContent = 'Заполните все поля';
+                showStatus(status, 'Заполните все поля', 'error');
                 return;
             }
+
+            status.textContent = 'Попытка входа...';
+            status.style.display = 'block';
+            status.className = 'status-error';
 
             try {
                 const res = await fetch('/api/auth/login', {
@@ -164,16 +194,25 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
+
                 const data = await res.json();
+
                 if (res.ok) {
+                    // КРИТИЧЕСКИ ВАЖНО: сохраняем токен ПЕРЕД перенаправлением
                     localStorage.setItem('authToken', data.Token);
-                    alert('Вход успешен!');
-                    window.location.href = '/';
+                    console.log('Токен сохранён в localStorage');
+
+                    showStatus(status, 'Вход успешен! Перенаправление...', 'success');
+
+                    //  Добавляем задержку для гарантированного сохранения токена
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 800);
                 } else {
-                    status.textContent = data.error || 'Неверные данные';
+                    showStatus(status, data.error || 'Неверные данные', 'error');
                 }
             } catch (err) {
-                status.textContent = 'Ошибка подключения к серверу';
+                showStatus(status, 'Ошибка подключения к серверу', 'error');
                 console.error('Login error:', err);
             }
         }
@@ -186,20 +225,24 @@
             const birthDateStr = document.getElementById('reg-birthdate').value;
 
             const status = document.getElementById('register-status');
-            status.textContent = '';
+            resetStatusMessages();
 
             if (!name || !email || !password || !birthDateStr) {
-                status.textContent = 'Заполните все поля';
+                showStatus(status, 'Заполните все поля', 'error');
                 return;
             }
 
             const parts = birthDateStr.split('.');
             if (parts.length !== 3 || parts[0].length !== 2 || parts[1].length !== 2 || parts[2].length !== 4) {
-                status.textContent = 'Формат даты: ДД.ММ.ГГГГ';
+                showStatus(status, 'Формат даты: ДД.ММ.ГГГГ', 'error');
                 return;
             }
 
             const birthDate = `${parts[2]}-${parts[1]}-${parts[0]}`; // ГГГГ-ММ-ДД
+
+            status.textContent = 'Регистрация...';
+            status.style.display = 'block';
+            status.className = 'status-error';
 
             try {
                 const res = await fetch('/api/auth/register', {
@@ -209,15 +252,21 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    alert('Регистрация успешна! Теперь войдите.');
-                    showLogin();
+                    showStatus(status, 'Регистрация успешна! Теперь войдите.', 'success');
+                    setTimeout(showLogin, 1000);
                 } else {
-                    status.textContent = data.error || 'Ошибка регистрации';
+                    showStatus(status, data.error || 'Ошибка регистрации', 'error');
                 }
             } catch (err) {
-                status.textContent = 'Ошибка подключения к серверу';
+                showStatus(status, 'Ошибка подключения к серверу', 'error');
                 console.error('Register error:', err);
             }
+        }
+
+        function showStatus(element, message, type) {
+            element.textContent = message;
+            element.style.display = 'block';
+            element.className = type === 'success' ? 'status-success' : 'status-error';
         }
     </script>
 </body>

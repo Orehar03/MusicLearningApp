@@ -1,46 +1,74 @@
-﻿let authToken = localStorage.getItem('authToken') || null;
-console.log('Токен при загрузке:', authToken ? authToken.substring(0, 10) + '...' : 'отсутствует');
+﻿// 🔥 ЧИТАЕМ ТОКЕН ИЗ localStorage СРАЗУ ПРИ ЗАГРУЗКЕ СКРИПТА
+let authToken = localStorage.getItem('authToken') || null;
+console.log('🔑 Токен при инициализации скрипта:', authToken ? 'найден' : 'не найден');
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('Страница мониторинга загружена');
     updateAuthButtons();
-    loadPageContent();
-    checkSession();
+
+    // 🔥 ПРОВЕРЯЕМ СЕССИЮ ТОЛЬКО ПОСЛЕ ПОЛНОЙ ЗАГРУЗКИ DOM
+    setTimeout(() => {
+        checkSession();
+        loadPageContent();
+    }, 100);
 });
 
 function checkSession() {
-    if (!authToken) {
-        if (window.location.pathname !== '/auth.html') {
-            console.log('Нет токена, редирект на вход');
-            window.location.href = '/auth.html';
-        }
+    console.log('Проверка сессии...');
+
+    // Читаем актуальное значение из localStorage
+    const storedToken = localStorage.getItem('authToken');
+    authToken = storedToken; // Обновляем глобальную переменную
+
+    if (!storedToken) {
+        console.log('Токен отсутствует в localStorage');
+        handleUnauthorized();
         return;
     }
 
     // Проверяем валидность токена
-    const tokenParts = authToken.split('.');
+    const tokenParts = storedToken.split('.');
     if (tokenParts.length !== 3) {
-        console.log('Невалидный токен, очищаем');
-        localStorage.removeItem('authToken');
-        authToken = null;
-        if (window.location.pathname !== '/auth.html') {
-            window.location.href = '/auth.html';
-        }
+        console.log('Невалидный формат токена');
+        handleUnauthorized();
         return;
     }
+
+    console.log('Сессия активна');
+    updateAuthButtons();
+}
+
+function handleUnauthorized() {
+    console.log('Обработка неавторизованного доступа');
+
+    // Не перенаправляем, если уже на странице входа
+    if (window.location.pathname === '/auth.html') {
+        console.log('Уже на странице входа, перенаправление не требуется');
+        return;
+    }
+
+    // Показываем предупреждение с задержкой
+    setTimeout(() => {
+        alert('Сессия истекла или отсутствует. Пожалуйста, войдите снова.');
+        window.location.href = '/auth.html';
+    }, 300);
 }
 
 function updateAuthButtons() {
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
         logoutBtn.style.display = authToken ? 'inline-block' : 'none';
+        console.log(`Кнопка выхода: ${authToken ? 'видна' : 'скрыта'}`);
     }
 }
 
 async function apiRequest(url, options = {}) {
     const headers = options.headers || {};
-    if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
-        console.log(`📡 Запрос к ${url} с токеном`);
+    const storedToken = localStorage.getItem('authToken');
+
+    if (storedToken) {
+        headers['Authorization'] = `Bearer ${storedToken}`;
+        console.log(`Запрос к ${url} с токеном`);
     }
 
     headers['Content-Type'] = 'application/json';
@@ -52,60 +80,65 @@ async function apiRequest(url, options = {}) {
         });
 
         if (response.status === 401) {
-            console.log('⚠️ 401 Unauthorized - сессия истекла');
+            console.log('401 Unauthorized - сессия истекла');
             localStorage.removeItem('authToken');
-            authToken = null;
-            return {
-                ok: false,
-                status: 401,
-                json: async () => ({ error: 'Сессия истекла. Пожалуйста, войдите снова.' })
-            };
+            handleUnauthorized();
+            return response;
         }
 
         return response;
     } catch (error) {
-        console.error(`🔥 Ошибка запроса к ${url}:`, error);
+        console.error(`Ошибка запроса к ${url}:`, error);
         throw error;
     }
 }
 
-// === ДАЛЬШЕ ИДЁТ ОСТАЛЬНОЙ КОД (ЗАГРУЗКА УРОКОВ, ДОМАШЕК И Т.Д.) ===
-
 function loadPageContent() {
     const path = window.location.pathname;
+    console.log(`Загрузка контента для страницы: ${path}`);
+
     if (path.includes('materials')) {
         loadLessons();
     } else if (path.includes('homework')) {
         loadHomeworks();
+    } else if (path.includes('consultation')) {
+        // Уже загружено в самой странице
     }
 }
 
+// === ФУНКЦИИ ЗАГРУЗКИ КОНТЕНТА ===
+
 async function loadLessons() {
     try {
+        console.log('Загрузка уроков...');
         const response = await apiRequest('/api/lessons');
+
         if (!response.ok) {
-            if (response.status === 401) {
-                alert('Сессия истекла. Пожалуйста, войдите снова.');
-                localStorage.removeItem('authToken');
-                window.location.href = '/auth.html';
-                return;
-            }
-            throw new Error('Ошибка загрузки');
+            throw new Error('Ошибка загрузки уроков');
         }
+
         const lessons = await response.json();
         const container = document.getElementById('lessons-container');
+
+        if (!container) {
+            console.error('❌ Контейнер для уроков не найден');
+            return;
+        }
+
         container.innerHTML = lessons.map(lesson => `
             <div class="lesson-item">
                 <h2>${lesson.title}</h2>
                 <p>${lesson.description}</p>
                 <div class="video-container">
-                    <video controls width="100%">
+                    <video controls>
                         <source src="${lesson.videoPath}" type="video/mp4">
                         Ваш браузер не поддерживает видео
                     </video>
                 </div>
             </div>
         `).join('');
+
+        console.log('Уроки успешно загружены');
     } catch (error) {
         console.error('Ошибка загрузки уроков:', error);
         alert('Не удалось загрузить уроки. Попробуйте обновить страницу.');
@@ -114,18 +147,21 @@ async function loadLessons() {
 
 async function loadHomeworks() {
     try {
+        console.log('📝 Загрузка домашних заданий...');
         const response = await apiRequest('/api/homeworks');
+
         if (!response.ok) {
-            if (response.status === 401) {
-                alert('Сессия истекла. Пожалуйста, войдите снова.');
-                localStorage.removeItem('authToken');
-                window.location.href = '/auth.html';
-                return;
-            }
-            throw new Error('Ошибка загрузки');
+            throw new Error('Ошибка загрузки заданий');
         }
+
         const homeworks = await response.json();
         const container = document.getElementById('homework-container');
+
+        if (!container) {
+            console.error('Контейнер для домашних заданий не найден');
+            return;
+        }
+
         container.innerHTML = homeworks.map(hw => {
             const deadline = new Date(hw.deadline);
             const now = new Date();
@@ -160,15 +196,17 @@ async function loadHomeworks() {
                 </div>
             `;
         }).join('');
+
+        console.log('Домашние задания успешно загружены');
     } catch (error) {
-        console.error('Ошибка загрузки заданий:', error);
+        console.error('❌ Ошибка загрузки заданий:', error);
         alert('Не удалось загрузить задания. Попробуйте обновить страницу.');
     }
 }
 
 async function submitHomework(homeworkId) {
     const textAnswer = document.getElementById(`answer-${homeworkId}`).value;
-    const statusElement = document.getElementById(`status-${hw.id}`);
+    const statusElement = document.getElementById(`status-${homeworkId}`);
 
     try {
         const response = await apiRequest('/api/submissions', {
@@ -181,20 +219,30 @@ async function submitHomework(homeworkId) {
             statusElement.textContent = 'Отправлено!';
             statusElement.style.color = 'green';
         } else {
-            statusElement.textContent = result.error || 'Ошибка отправки';
+            statusElement.textContent = result.error || '❌ Ошибка отправки';
             statusElement.style.color = 'red';
         }
     } catch (error) {
-        statusElement.textContent = 'Ошибка подключения';
+        statusElement.textContent = '❌ Ошибка подключения';
         statusElement.style.color = 'red';
     }
 }
 
-// Выход
+// === ОБРАБОТКА ВЫХОДА ===
+
 document.getElementById('logout-btn')?.addEventListener('click', () => {
+    console.log('🚪 Попытка выхода');
+
     localStorage.removeItem('authToken');
     authToken = null;
+
     updateAuthButtons();
-    alert('Вы вышли из системы');
-    window.location.href = '/';
+
+    // Показываем уведомление и перенаправляем
+    setTimeout(() => {
+        alert('Вы успешно вышли из системы');
+        window.location.href = '/';
+    }, 300);
 });
+
+console.log('Скрипт site.js полностью загружен и инициализирован');
