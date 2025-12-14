@@ -183,7 +183,7 @@
                 console.error("auth.html: Элемент с id='reg-birthdate' не найден!");
             }
 
-            // --- Функция входа (без изменений, т.к. она была рабочей) ---
+            // --- Функция входа ---
             async function login() {
                 console.log("LOGIN: Функция login() вызвана");
 
@@ -246,13 +246,14 @@
                 }
             }
 
-            // Делаем функции login и register глобальными, чтобы их можно было вызвать из onclick
+            // Делаем функции login, register, showRegister, showLogin глобальными,
+            // чтобы их можно было вызвать из атрибутов onclick в HTML
             window.login = login;
             window.register = register;
             window.showRegister = showRegister;
             window.showLogin = showLogin;
 
-            // Функция register оставлена без изменений, но она тоже должна быть внутри DOMContentLoaded
+            // Функция register
             async function register() {
                 const name = document.getElementById('reg-name').value;
                 const email = document.getElementById('reg-email').value;
