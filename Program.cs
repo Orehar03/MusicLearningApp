@@ -1,9 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using MusicLearningApp.Data;
 using MusicLearningApp.Services;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,7 +27,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 🔥 КРИТИЧЕСКИ ВАЖНО: правильная регистрация JWT
+// КРИТИЧЕСКИ ВАЖНО: правильная регистрация JWT
 var jwtKey = "super_secret_key_for_music_app_12345"; // 32+ символа
 builder.Services.AddSingleton(new JwtSettings
 {
@@ -54,7 +55,7 @@ builder.Services.AddAuthentication(options =>
         ClockSkew = TimeSpan.Zero // НЕТ отклонения времени
     };
 
-    // 🔥 Для отладки: логируем ошибки валидации токена
+    // Для отладки: логируем ошибки валидации токена
     options.Events = new JwtBearerEvents
     {
         OnAuthenticationFailed = context =>
@@ -73,7 +74,18 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 52428800; // 50 MB
+});
+
 var app = builder.Build();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Error");
+    app.UseHsts();
+}
 
 // Создаём БД и админа
 using (var scope = app.Services.CreateScope())
@@ -87,9 +99,19 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
 }
 
-// 🔥 ПРАВИЛЬНЫЙ ПОРЯДОК MIDDLEWARE
+//ПРАВИЛЬНЫЙ ПОРЯДОК MIDDLEWARE
 app.UseCors("AllowAll"); // Сначала CORS
 app.UseStaticFiles();    // Потом статические файлы
+
+// Настраиваем прием файлов размером до 50 МБ
+app.UseStaticFiles(new StaticFileOptions
+{
+    ServeUnknownFileTypes = true,
+});
+
+app.UseHttpsRedirection();
+
+
 app.UseRouting();        // Потом маршрутизация
 app.UseAuthentication(); // Потом аутентификация
 app.UseAuthorization();  // И наконец авторизация

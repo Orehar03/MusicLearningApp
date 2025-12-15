@@ -12,11 +12,12 @@ namespace MusicLearningApp.Controllers;
 public class ConsultationController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
+    private readonly ILogger<ConsultationController> _logger; // Добавляем логгер
 
-    // Внедряем DbContext через конструктор
-    public ConsultationController(ApplicationDbContext context)
+    public ConsultationController(ApplicationDbContext context, ILogger<ConsultationController> logger)
     {
         _context = context;
+        _logger = logger;
     }
 
     [Authorize]
@@ -26,31 +27,36 @@ public class ConsultationController : ControllerBase
         if (string.IsNullOrWhiteSpace(model.Text))
             return BadRequest(new { error = "Сообщение не может быть пустым" });
 
-        // Получаем ID текущего пользователя
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-        if (userIdClaim == null)
-            return Unauthorized(new { error = "Не удалось определить пользователя" });
-
-        var userId = int.Parse(userIdClaim.Value);
-
-        // Ищем пользователя в БД, чтобы получить его имя
-        var user = await _context.Users.FindAsync(userId);
-        if (user == null)
-            return NotFound(new { error = "Пользователь не найден" });
-
-        // Создаем и сохраняем сообщение в базу данных
-        var consultationMessage = new ConsultationMessage
+        try
         {
-            UserId = userId,
-            UserName = user.Name, // Сохраняем имя
-            Text = model.Text,
-            Timestamp = DateTime.UtcNow
-        };
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null)
+                return Unauthorized(new { error = "Не удалось определить пользователя" });
 
-        _context.ConsultationMessages.Add(consultationMessage);
-        await _context.SaveChangesAsync();
+            var userId = int.Parse(userIdClaim.Value);
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+                return NotFound(new { error = "Пользователь не найден" });
 
-        return Ok(new { message = "Сообщение отправлено администратору" });
+            var consultationMessage = new ConsultationMessage
+            {
+                UserId = userId,
+                UserName = user.Name,
+                Text = model.Text,
+                Timestamp = DateTime.UtcNow
+            };
+
+            _context.ConsultationMessages.Add(consultationMessage);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation($"Сообщение от пользователя '{user.Name}' (ID: {userId}) успешно сохранено.");
+            return Ok(new { message = "Сообщение отправлено администратору" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Ошибка при сохранении сообщения в базу данных.");
+            return StatusCode(500, new { error = "Внутренняя ошибка сервера при сохранении сообщения" });
+        }
     }
 }
 
