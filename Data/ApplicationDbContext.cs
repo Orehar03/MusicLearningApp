@@ -31,9 +31,9 @@ public class ApplicationDbContext : DbContext
         );
 
         // Тестовые сообщения консультации
-        modelBuilder.Entity<ConsultationMessage>().HasData(
-            new ConsultationMessage { Id = 1, UserId = 2, UserName = "Петр", Text = "Не понимаю, как строить аккорды в первой позиции", Timestamp = DateTime.UtcNow.AddHours(-5) },
-            new ConsultationMessage { Id = 2, UserId = 3, UserName = "Анна", Text = "Можно ли получить дополнительные материалы по ритмике?", Timestamp = DateTime.UtcNow.AddHours(-2) }
-        );
+        //modelBuilder.Entity<ConsultationMessage>().HasData(
+        //    new ConsultationMessage { Id = 1, UserId = 2, UserName = "Петр", Text = "Не понимаю, как строить аккорды в первой позиции", Timestamp = DateTime.UtcNow.AddHours(-5) },
+        //    new ConsultationMessage { Id = 2, UserId = 3, UserName = "Анна", Text = "Можно ли получить дополнительные материалы по ритмике?", Timestamp = DateTime.UtcNow.AddHours(-2) }
+        //);
     }
 }

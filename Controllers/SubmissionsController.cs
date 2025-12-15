@@ -73,7 +73,7 @@ public class SubmissionsController : ControllerBase
 
         _context.Submissions.Add(submission);
         await _context.SaveChangesAsync();
-        return Ok("Работа отправлена");
+        return Ok(new { message = "Работа отправлена" });
     }
 }
 
