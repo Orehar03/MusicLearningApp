@@ -181,7 +181,7 @@
                     <div class="message-item admin-message">
                         <div class="message-header">
                             <div class="message-author">${msg.userName}</div>
-                            <div class="message-time">${new Date(msg.timestamp).toLocaleString('ru-RU')}</div>
+                            <div class="message-time">${new Date(msg.timestamp).toLocaleString('ru-RU', { timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone })}</div>
                         </div>
                         <div class="message-content">
                             <strong>Обращение:</strong> ${msg.text}

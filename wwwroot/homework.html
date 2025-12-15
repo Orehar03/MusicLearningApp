@@ -123,6 +123,19 @@
 
         <!-- Секция для администратора -->
         <div id="admin-section" class="admin-only">
+            <!-- Скопированный блок с описанием задания -->
+            <div class="homework-item">
+                <div class="homework-header">Домашка №1</div>
+                <div class="homework-description">
+                    Текст текст текст текст текст текст текст текст текст текст текст текст текст.<br>
+                    1. текст текст текст текст текст текст;<br>
+                    2. текст текст текст текст текст текст текст;<br>
+                    3. текст текст текст текст текст текст текст текст текст.
+                </div>
+                <p class="deadline-info" id="admin-deadline-timer">Загрузка...</p>
+            </div>
+
+            <!-- Блок для отображения отправленных работ -->
             <h2>Отправленные работы</h2>
             <div id="admin-submissions-container">
                 <p>Загрузка работ...</p>
@@ -131,12 +144,11 @@
     </div>
     <script src="/js/site.js"></script>
     <script>
-        // Этот скрипт теперь выполняется после site.js
         document.addEventListener('DOMContentLoaded', async () => {
             const token = localStorage.getItem('authToken');
-            if (!token) return; // Если нет токена, ничего не делаем
+            if (!token) return;
 
-            // --- ЛОГИКА ТАЙМЕРА (без изменений) ---
+            // --- ЛОГИКА ТАЙМЕРА (для пользователя и админа) ---
             function updateDeadline() {
                 const now = new Date();
                 const currentDay = now.getDay();
@@ -146,16 +158,28 @@
                 deadline.setHours(23, 59, 59, 999);
                 const diff = deadline - now;
 
-                if (diff <= 0) {
-                    document.getElementById('deadline-timer').textContent = 'Дедлайн истек';
-                    return;
+                let timeString = '';
+                if (diff > 0) {
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                    timeString = days > 0 ? `${days} дн. ${hours} ч.` : `${hours} ч. ${minutes} мин. ${seconds} сек.`;
+
+                    // Показываем форму отправки, если время еще есть
+                    document.querySelector('.submission-area')?.style.setProperty('display', 'block');
+                } else {
+                    timeString = 'Дедлайн истек';
+                    // Скрываем форму отправки, если время вышло
+                    document.querySelector('.submission-area')?.style.setProperty('display', 'none');
                 }
-                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-                let timeString = days > 0 ? `${days} дн. ${hours} ч.` : `${hours} ч. ${minutes} мин. ${seconds} сек.`;
-                document.getElementById('deadline-timer').textContent = `Осталось: ${timeString}`;
+
+                // Обновляем таймеры и для пользователя, и для админа
+                const userTimer = document.getElementById('deadline-timer');
+                if (userTimer) userTimer.textContent = `Осталось: ${timeString}`;
+
+                const adminTimer = document.getElementById('admin-deadline-timer');
+                if (adminTimer) adminTimer.textContent = `Осталось: ${timeString}`;
             }
             updateDeadline();
             setInterval(updateDeadline, 1000);
@@ -227,7 +251,7 @@
             });
         });
 
-        // --- ФУНКЦИЯ ЗАГРУЗКИ РАБОТ ДЛЯ АДМИНА (с улучшенной обработкой ошибок) ---
+        // --- ФУНКЦИЯ ЗАГРУЗКИ РАБОТ ДЛЯ АДМИНА ---
         async function loadAdminSubmissions() {
             const container = document.getElementById('admin-submissions-container');
             try {
@@ -242,7 +266,7 @@
                 container.innerHTML = submissions.map(sub => `
                         <div class="submission-item">
                             <div class="submission-header">Работа от: ${sub.user.name} (${sub.user.email})</div>
-                            <div class="submission-time">Отправлено: ${new Date(sub.submissionTime).toLocaleString('ru-RU')}</div>
+                            <div class="submission-time">Отправлено: ${new Date(sub.submissionTime).toLocaleString('ru-RU', { timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone })}</div>
                             <div>${sub.textAnswer || 'Текст ответа отсутствует'}</div>
                             ${sub.filePath ? `
                                 <div class="submission-files">
