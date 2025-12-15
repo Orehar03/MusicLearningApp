@@ -8,17 +8,14 @@
     const isHomePage = window.location.pathname === '/' || window.location.pathname.endsWith('index.html');
 
     // --- КОНТРОЛЬ ДОСТУПА ---
-    // Если токена нет, и мы не на главной и не на странице входа - перенаправляем на вход
     if (!token && !isAuthPage && !isHomePage) {
         console.log('site.js: Доступ запрещен. Перенаправляем на страницу входа.');
         window.location.href = '/auth.html';
-        return; // Прерываем выполнение скрипта
+        return;
     }
 
-    // 2. Обновляем кнопки на ВСЕХ страницах
     updateAuthButtons(token);
 
-    // 3. Загружаем контент для остальных страниц, если токен есть
     if (token) {
         loadPageContent();
     }
@@ -30,21 +27,20 @@ function updateAuthButtons(token) {
 
     if (logoutBtn && loginLinkContainer) {
         if (token) {
-            // Пользователь авторизован: показываем "Выйти", скрываем "Вход"
             logoutBtn.style.display = 'inline-block';
             loginLinkContainer.style.display = 'none';
         } else {
-            // Пользователь не авторизован: показываем "Вход", скрываем "Выйти"
             logoutBtn.style.display = 'none';
             loginLinkContainer.style.display = 'inline';
         }
         console.log(`site.js: Кнопки авторизации обновлены. Токен: ${token ? 'есть' : 'нету'}.`);
     } else {
-        // Если элементы не найдены на странице, выводим ошибку в консоль для отладки
-        console.error("site.js: Не удалось найти элементы кнопок авторизации на странице.");
+        if (!logoutBtn) console.error("site.js: Элемент с id='logout-btn' не найден.");
+        if (!loginLinkContainer) console.error("site.js: Элемент с id='login-link-container' не найден.");
     }
 }
 
+// --- ИСПРАВЛЕННАЯ ФУНКЦИЯ API REQUEST ---
 async function apiRequest(url, options = {}) {
     const headers = options.headers || {};
     const token = localStorage.getItem('authToken');
@@ -54,7 +50,11 @@ async function apiRequest(url, options = {}) {
         console.log(`site.js: Запрос к ${url} с токеном`);
     }
 
-    headers['Content-Type'] = 'application/json';
+    // --- ГЛАВНОЕ ИСПРАВЛЕНИЕ ---
+    // Устанавливаем Content-Type только если мы не отправляем FormData
+    if (!(options.body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+    }
 
     try {
         const response = await fetch(url, {
@@ -65,7 +65,6 @@ async function apiRequest(url, options = {}) {
         if (response.status === 401) {
             console.log('site.js: 401 Unauthorized - сессия истекла, удаляю токен.');
             localStorage.removeItem('authToken');
-            // Если получили 401, перенаправляем на страницу входа
             window.location.href = '/auth.html';
             return Promise.reject("Unauthorized");
         }
@@ -86,7 +85,6 @@ function loadPageContent() {
     } else if (path.includes('consultation')) {
         // Контент для консультации загружается своим скриптом на странице
     }
-    // Функция loadLessons теперь находится в materials.html
 }
 
 // === ФУНКЦИЯ ЗАГРУЗКИ ДОМАШНИХ ЗАДАНИЙ (без изменений) ===

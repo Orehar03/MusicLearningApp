@@ -13,7 +13,7 @@ namespace MusicLearningApp.Controllers;
 public class SubmissionsController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
-    private readonly IWebHostEnvironment _env; // Для работы с файловой системой
+    private readonly IWebHostEnvironment _env;
 
     public SubmissionsController(ApplicationDbContext context, IWebHostEnvironment env)
     {
@@ -21,21 +21,21 @@ public class SubmissionsController : ControllerBase
         _env = env;
     }
 
-    // НОВЫЙ ЭНДПОИНТ ДЛЯ АДМИНА
+    // ЭТОТ МЕТОД НУЖЕН ДЛЯ АДМИНА
     [HttpGet]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetAllSubmissions()
     {
         var submissions = await _context.Submissions
-            .Include(s => s.User) // Подгружаем данные пользователя
-            .Include(s => s.Homework) // Подгружаем данные домашнего задания
+            .Include(s => s.User)
+            .Include(s => s.Homework)
             .OrderByDescending(s => s.SubmissionTime)
             .ToListAsync();
 
         return Ok(submissions);
     }
 
-    // ИЗМЕНЕННЫЙ ЭНДПОИНТ ДЛЯ ОТПРАВКИ РАБОТЫ
+    // ЭТОТ МЕТОД ДЛЯ ОТПРАВКИ РАБОТЫ
     [HttpPost]
     public async Task<IActionResult> SubmitHomework([FromForm] SubmissionModel model)
     {
@@ -52,17 +52,14 @@ public class SubmissionsController : ControllerBase
             SubmissionTime = DateTime.Now
         };
 
-        // Логика сохранения файла
         if (model.File != null && model.File.Length > 0)
         {
-            // Создаем папку для загрузок, если ее нет
             var uploadsPath = Path.Combine(_env.WebRootPath, "uploads");
             if (!Directory.Exists(uploadsPath))
             {
                 Directory.CreateDirectory(uploadsPath);
             }
 
-            // Создаем уникальное имя файла, чтобы избежать конфликтов
             var uniqueFileName = Guid.NewGuid().ToString() + "_" + model.File.FileName;
             var filePath = Path.Combine(uploadsPath, uniqueFileName);
 
@@ -71,7 +68,6 @@ public class SubmissionsController : ControllerBase
                 await model.File.CopyToAsync(fileStream);
             }
 
-            // Сохраняем относительный путь к файлу в базу данных
             submission.FilePath = "/uploads/" + uniqueFileName;
         }
 
@@ -81,10 +77,9 @@ public class SubmissionsController : ControllerBase
     }
 }
 
-// ОБНОВЛЕННАЯ МОДЕЛЬ ДЛЯ ПРИЕМА ДАННЫХ С ФАЙЛОМ
 public class SubmissionModel
 {
     public int HomeworkId { get; set; }
     public string? TextAnswer { get; set; }
-    public IFormFile? File { get; set; } // Используем IFormFile для приема файла
+    public IFormFile? File { get; set; }
 }

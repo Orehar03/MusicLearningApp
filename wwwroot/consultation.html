@@ -6,6 +6,7 @@
     <title>Онлайн-консультация</title>
     <link rel="stylesheet" href="/css/site.css">
     <style>
+        /* ... (ваши стили остаются без изменений) ... */
         .messages-container {
             max-height: 400px;
             overflow-y: auto;
@@ -82,7 +83,6 @@
         <a href="/">Главная</a>
         <a href="/materials">Обучающий материал</a>
         <a href="/homework">Домашнее задание</a>
-        <a href="/consultation">Онлайн-консультация</a>
         <div id="auth-buttons">
             <span id="login-link-container">
                 <a href="/auth.html" style="color: white; text-decoration: none; margin-left: 10px;">Вход / Регистрация</a>
@@ -117,38 +117,44 @@
     </div>
     <script src="/js/site.js"></script>
     <script>
-        async function loadCurrentUser() {
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log("consultation.html: Страница загружена.");
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                console.log("consultation.html: Токен отсутствует, скрипты не выполняются.");
+                return;
+            }
+
             try {
                 const response = await apiRequest('/api/auth/me');
-                if (!response.ok) {
-                    throw new Error('Ошибка авторизации');
+                if (!response.ok) throw new Error('Ошибка авторизации');
+                const userData = await response.json();
+                console.log("consultation.html: Данные пользователя получены:", userData);
+
+                const userSection = document.getElementById('user-section');
+                const adminSection = document.getElementById('admin-section');
+
+                if (userData.role === 'Admin') {
+                    userSection.style.display = 'none';
+                    adminSection.style.display = 'block';
+                    loadAdminMessages();
+                } else {
+                    userSection.style.display = 'block';
+                    adminSection.style.display = 'none';
                 }
-                return await response.json();
             } catch (error) {
-                console.error('Ошибка загрузки данных пользователя:', error);
+                console.error('consultation.html: Ошибка загрузки данных пользователя:', error);
                 document.getElementById('auth-error').style.display = 'block';
-                return null;
             }
-        }
+        });
 
-        async function loadConsultationPage() {
-            const currentUser = await loadCurrentUser();
-            if (!currentUser) return;
-
-            const userSection = document.getElementById('user-section');
-            const adminSection = document.getElementById('admin-section');
-
-            if (currentUser.role === 'Admin') {
-                userSection.style.display = 'none';
-                adminSection.style.display = 'block';
-                loadAdminMessages();
-            } else {
-                userSection.style.display = 'block';
-                adminSection.style.display = 'none';
-            }
+        async function loadCurrentUser() { // Эта функция больше не нужна, т.к. все в DOMContentLoaded
+            return null;
         }
 
         async function loadAdminMessages() {
+            console.log("consultation.html: Загружаю сообщения для админа...");
+            const container = document.getElementById('admin-messages-container');
             try {
                 const response = await apiRequest('/api/adminconsultation/messages');
                 if (!response.ok) {
@@ -157,44 +163,31 @@
                 }
 
                 const messages = await response.json();
+                console.log("consultation.html: Сообщения для админа получены:", messages);
                 renderAdminMessages(messages);
             } catch (error) {
-                console.error('Ошибка загрузки сообщений:', error);
-                document.getElementById('admin-messages-container').innerHTML = `
-                            <div class="message-item admin-message">
-                                <div class="message-content">
-                                    Ошибка загрузки сообщений: ${error.message}
-                                </div>
-                            </div>
-                        `;
+                console.error('consultation.html: Ошибка загрузки сообщений:', error);
+                container.innerHTML = `<div class="message-item admin-message"><div class="message-content">Ошибка загрузки сообщений: ${error.message}</div></div>`;
             }
         }
 
         function renderAdminMessages(messages) {
             const container = document.getElementById('admin-messages-container');
-
             if (messages.length === 0) {
-                container.innerHTML = `
-                            <div class="message-item admin-message">
-                                <div class="message-content">
-                                    Нет новых сообщений от пользователей
-                                </div>
-                            </div>
-                        `;
+                container.innerHTML = '<div class="message-item admin-message"><div class="message-content">Нет новых сообщений от пользователей</div></div>';
                 return;
             }
-
             container.innerHTML = messages.map(msg => `
-                        <div class="message-item admin-message">
-                            <div class="message-header">
-                                <div class="message-author">${msg.userName}</div>
-                                <div class="message-time">${new Date(msg.timestamp).toLocaleString('ru-RU')}</div>
-                            </div>
-                            <div class="message-content">
-                                <strong>Обращение:</strong> ${msg.text}
-                            </div>
+                    <div class="message-item admin-message">
+                        <div class="message-header">
+                            <div class="message-author">${msg.userName}</div>
+                            <div class="message-time">${new Date(msg.timestamp).toLocaleString('ru-RU')}</div>
                         </div>
-                    `).join('');
+                        <div class="message-content">
+                            <strong>Обращение:</strong> ${msg.text}
+                        </div>
+                    </div>
+                `).join('');
         }
 
         document.getElementById('send-message-btn')?.addEventListener('click', async () => {
@@ -207,12 +200,15 @@
             }
 
             showStatus('Отправка...', 'info');
+            console.log("consultation.html: Отправляю сообщение:", message);
 
             try {
                 const response = await apiRequest('/api/consultation/message', {
                     method: 'POST',
                     body: JSON.stringify({ text: message })
                 });
+
+                console.log("consultation.html: Ответ сервера:", response);
 
                 if (!response.ok) {
                     const error = await response.json();
@@ -222,7 +218,7 @@
                 showStatus('Сообщение успешно отправлено!', 'success');
                 document.getElementById('consultation-message').value = '';
             } catch (error) {
-                console.error('Ошибка отправки сообщения:', error);
+                console.error('consultation.html: Ошибка отправки сообщения:', error);
                 showStatus('Ошибка отправки: ' + error.message, 'error');
             }
         });
@@ -232,9 +228,6 @@
             statusElement.textContent = message;
             statusElement.className = type === 'success' ? 'status-success' : 'status-error';
         }
-
-        // Загружаем страницу при старте
-        loadConsultationPage();
     </script>
 </body>
 </html>
